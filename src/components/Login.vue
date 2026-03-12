@@ -1,10 +1,7 @@
-<template>
-  <div class="auth-container">
-    <el-card class="auth-card">
-      <template #header>
+<template #header>
         <div class="auth-header">
-          <h2>个人专属控制台</h2>
-          <span>Personal Dashboard</span>
+          <h2>LifeOS 个人数字中枢</h2>
+          <span>Digital Workspace & Life Management</span>
         </div>
       </template>
 

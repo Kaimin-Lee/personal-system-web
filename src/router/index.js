@@ -29,12 +29,18 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  // 【新增】：根据路由 meta 动态修改浏览器标签页标题，极其专业！
+  if (to.meta.title) {
+    document.title = `${to.meta.title} - LifeOS`
+  } else {
+    document.title = 'LifeOS · 个人数字中枢'
+  }
+
   const token = localStorage.getItem('token')
   
   if (to.path === '/login' && token) {
     next('/dashboard')
   } else if (to.path !== '/login' && !token) {
-    // 【核心修复】：如果是用户第一次打开网页或强制刷新网页（from.name 不存在），不弹警告，直接静默过去
     if (from.name) {
       ElMessage.warning('请先登录系统')
     }
@@ -43,5 +49,4 @@ router.beforeEach((to, from, next) => {
     next()
   }
 })
-
 export default router
