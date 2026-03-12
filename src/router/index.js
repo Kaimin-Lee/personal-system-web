@@ -18,6 +18,13 @@ const routes = [
         name: 'Dashboard',
         component: () => import('../views/dashboard/Index.vue'),
         meta: { title: '我的主页' }
+      },
+      // 【核心修复】：在这里补上工作看板的路由！
+      {
+        path: 'work/todo',
+        name: 'Todo',
+        component: () => import('../views/work/Todo.vue'),
+        meta: { title: '项目进度看板' }
       }
     ]
   }
@@ -28,8 +35,9 @@ const router = createRouter({
   routes
 })
 
+// 路由守卫：核心免登逻辑与动态标题
 router.beforeEach((to, from, next) => {
-  // 【新增】：根据路由 meta 动态修改浏览器标签页标题，极其专业！
+  // 动态修改浏览器标签页标题
   if (to.meta.title) {
     document.title = `${to.meta.title} - LifeOS`
   } else {
@@ -49,4 +57,5 @@ router.beforeEach((to, from, next) => {
     next()
   }
 })
+
 export default router
