@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 // 1. 创建一个 axios 实例
 const request = axios.create({
   // 使用 Vite 代理，这里留空或写 '/' 即可
-  baseURL: '', 
-  timeout: 5000 
+  baseURL: '',
+  timeout: 5000
 })
 
 // 2. 请求拦截器：统一携带 Token

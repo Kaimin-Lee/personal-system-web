@@ -139,8 +139,16 @@ const handleSubmit = () => {
           ElMessage.success(res.message)
           if (activeMode.value === 'login') {
             // 登录成功，存储后端返回的 7天免登 Token
-            localStorage.setItem('token', res.data)
-            router.push('/dashboard') 
+            console.log('登录响应数据:', res)
+            const token = res.data?.token || res.data
+            console.log('提取的 token:', token)
+            if (token) {
+              localStorage.setItem('token', token)
+              console.log('token 已存储到 localStorage')
+            } else {
+              console.error('未能从响应中提取 token')
+            }
+            router.push('/dashboard')
           } else {
             handleModeSwitch('login')
           }
