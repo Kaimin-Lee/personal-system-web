@@ -7,16 +7,42 @@
         <el-card shadow="hover" class="box-card">
           <template #header>
             <div class="card-header">
-              <span class="title"><el-icon><Monitor /></el-icon> 当前核心任务</span>
+              <span class="title"><el-icon><Monitor /></el-icon> 核心任务 (Top 5)</span>
+              
+              <div class="sort-controls">
+                <el-select v-model="sortBy" size="small" style="width: 100px" @change="fetchDashboardData">
+                  <el-option label="按优先级" value="priority" />
+                  <el-option label="按截止日" value="deadline" />
+                </el-select>
+                
+                <el-select v-model="sortOrder" size="small" style="width: 70px" @change="fetchDashboardData">
+                  <el-option label="降序" value="desc" />
+                  <el-option label="升序" value="asc" />
+                </el-select>
+              </div>
             </div>
           </template>
+          
           <div class="card-content" v-loading="loading">
-            <el-empty v-if="tasks.length === 0" description="暂无进行中的任务" :image-size="60" />
+            <el-empty v-if="tasks.length === 0" description="暂无核心任务" :image-size="60" />
             
-            <div class="project-item" v-for="task in tasks" :key="task.id">
-              <span class="project-name">{{ task.title }}</span>
-              <el-tag size="small" :type="task.priority === 2 ? 'danger' : 'primary'">
-                {{ task.priority === 2 ? '高优' : '进行中' }}
+            <div 
+              v-for="task in tasks" 
+              :key="task.id" 
+              class="project-item"
+              :class="'priority-' + task.priority"
+            >
+              <div class="task-main">
+                <span class="project-name">{{ task.title }}</span>
+                <span class="task-status">
+                  {{ task.status === 1 ? '🚀 进行中' : '📌 待办' }}
+                  <span v-if="task.deadline" class="dashboard-deadline" :class="getDeadlineClass(task.deadline)">
+                    | <el-icon><Calendar /></el-icon> {{ formatDeadline(task.deadline) }}
+                  </span>
+                </span>
+              </div>
+              <el-tag size="small" :type="getPriorityType(task.priority)" effect="dark">
+                {{ getPriorityText(task.priority) }}
               </el-tag>
             </div>
           </div>
@@ -48,32 +74,58 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Monitor, Timer } from '@element-plus/icons-vue'
+import { Monitor, Timer, Calendar } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import request from '@/utils/request' // 确保你的路径正确
+import request from '@/utils/request'
 
 const loading = ref(true)
 const tasks = ref([])
 const countdowns = ref([])
 
-// 计算距离目标日期还剩多少天
+// 【新增】：排序状态响应式变量
+const sortBy = ref('priority') // 默认按优先级
+const sortOrder = ref('desc')  // 默认降序
+
+const getPriorityText = (val) => val === 2 ? '高优' : val === 1 ? '中优' : '低优'
+const getPriorityType = (val) => val === 2 ? 'danger' : val === 1 ? 'warning' : 'info'
+
+const formatDeadline = (dateStr) => {
+  if (!dateStr) return ''
+  return dateStr.replace('T', ' ').substring(5, 16) 
+}
+
+const getDeadlineClass = (dateStr) => {
+  if (!dateStr) return ''
+  const now = new Date().getTime()
+  const due = new Date(dateStr.replace('T', ' ')).getTime()
+  if (due < now) return 'text-danger fw-bold' 
+  if (due - now < 1000 * 60 * 60 * 24) return 'text-warning fw-bold' 
+  return 'text-secondary' 
+}
+
 const calculateDaysLeft = (targetDateStr) => {
   const today = new Date()
-  today.setHours(0, 0, 0, 0) // 把今天的时间归零，只算整天
+  today.setHours(0, 0, 0, 0)
   const targetDate = new Date(targetDateStr)
-  
   const diffTime = targetDate - today
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   return diffDays > 0 ? diffDays : 0
 }
 
-// 核心：请求后端真实数据
 const fetchDashboardData = async () => {
+  loading.value = true
   try {
-    const res = await request.get('/api/dashboard/data')
+    // 【核心变化】：将排序参数通过 params 拼接到 URL 后面发出请求
+    const res = await request.get('/dashboard/data', {
+      params: {
+        sortBy: sortBy.value,
+        sortOrder: sortOrder.value
+      }
+    })
+    
     if (res.code === 200) {
-      tasks.value = res.data.tasks
-      countdowns.value = res.data.countdowns
+      tasks.value = res.data.tasks || []
+      countdowns.value = res.data.countdowns || []
     } else {
       ElMessage.error(res.message)
     }
@@ -84,21 +136,46 @@ const fetchDashboardData = async () => {
   }
 }
 
-// 组件挂载时自动触发请求
 onMounted(() => {
   fetchDashboardData()
 })
 </script>
 
 <style scoped>
-/* 保持你之前的样式不变 */
 .dashboard-container { padding: 10px; }
 .welcome-text { color: #303133; margin-bottom: 24px; font-weight: 500; }
-.card-header { display: flex; align-items: center; }
+
+/* 头部左右布局：左边标题，右边排序控件 */
+.card-header { display: flex; justify-content: space-between; align-items: center; width: 100%;}
 .card-header .title { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 16px; }
+.sort-controls { display: flex; gap: 8px; align-items: center;}
+
 .card-content { min-height: 120px; }
-.project-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;}
-.project-name { font-weight: bold; color: #606266; }
+
+.project-item { 
+  display: flex; justify-content: space-between; align-items: center; 
+  margin-bottom: 12px; padding: 12px 15px; 
+  background-color: #f8f9fa; border-radius: 6px;
+  border-left: 4px solid transparent; transition: all 0.3s ease;
+}
+.project-item:hover {
+  background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-2px);
+}
+.task-main { display: flex; flex-direction: column; gap: 4px; }
+.project-name { font-weight: bold; color: #303133; font-size: 14px;}
+.task-status { font-size: 12px; color: #909399; }
+
+/* Dashboard 卡片内的微缩时间样式 */
+.dashboard-deadline { margin-left: 5px; }
+.fw-bold { font-weight: bold; }
+.text-danger { color: #F56C6C !important; }
+.text-warning { color: #E6A23C !important; }
+.text-secondary { color: #909399; }
+
+.priority-2 { border-left-color: #F56C6C; background-color: #fef0f0; } 
+.priority-1 { border-left-color: #E6A23C; background-color: #fdf6ec; } 
+.priority-0 { border-left-color: #909399; } 
+
 .countdown-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;}
 .countdown-item { text-align: center; }
 .event-name { font-size: 16px; color: #909399; display: block; margin-bottom: 10px; }

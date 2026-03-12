@@ -8,19 +8,27 @@ const routes = [
     component: () => import('../components/Login.vue')
   },
   {
-    path: '/',
-    name: 'Layout',
-    component: () => import('../layout/Index.vue'), 
-    redirect: '/dashboard',
-    children: [
-      {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('../views/dashboard/Index.vue'),
-        meta: { title: '我的主页' }
-      }
-    ]
-  }
+      path: '/',
+      name: 'Layout',
+      component: () => import('../layout/Index.vue'), 
+      redirect: '/dashboard',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'Dashboard',
+          component: () => import('../views/dashboard/Index.vue'),
+          meta: { title: '我的主页' }
+        },
+        // 【核心新增】：配置工作看板路由
+        {
+          path: 'work/todo',
+          name: 'Todo',
+          component: () => import('../views/work/Todo.vue'),
+          meta: { title: '项目进度看板' }
+        }
+        // 以后每写一个新页面，都在这里加一段！
+      ]
+    }
 ]
 
 const router = createRouter({
