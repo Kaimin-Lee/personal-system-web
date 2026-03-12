@@ -15,37 +15,37 @@
       </el-menu>
 
       <el-form :model="authForm" :rules="rules" ref="authFormRef" label-width="0" class="auth-form">
-        <el-form-item prop="email">
-          <el-input v-model="authForm.email" placeholder="请输入常用邮箱" prefix-icon="Message" size="large" />
-        </el-form-item>
-
-        <el-form-item prop="code" v-if="activeMode !== 'login'">
-          <div class="code-input-group">
-            <el-input v-model="authForm.code" placeholder="验证码" prefix-icon="Key" size="large" style="flex: 1; margin-right: 10px;" />
-            <el-button size="large" :disabled="countdown > 0" @click="sendCode" style="width: 120px;">
-              {{ countdown > 0 ? `${countdown}s 后重发` : '获取验证码' }}
-            </el-button>
-          </div>
-        </el-form-item>
-        
-        <el-form-item prop="password">
-          <el-input 
-            v-model="authForm.password" 
-            type="password" 
-            :placeholder="activeMode === 'reset' ? '请输入新密码' : '请输入密码'" 
-            prefix-icon="Lock"
-            show-password
-            size="large"
-            @keyup.enter="handleSubmit"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" class="submit-btn" size="large" :loading="loading" @click="handleSubmit">
-            {{ activeMode === 'login' ? '登 录' : activeMode === 'register' ? '注 册' : '确 认 修 改' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
+              <el-form-item prop="email">
+                <el-input v-model="authForm.email" placeholder="请输入常用邮箱" :prefix-icon="Message" size="large" />
+              </el-form-item>
+      
+              <el-form-item prop="code" v-if="activeMode !== 'login'">
+                <div class="code-input-group">
+                  <el-input v-model="authForm.code" placeholder="验证码" :prefix-icon="Key" size="large" style="flex: 1; margin-right: 10px;" />
+                  <el-button size="large" :disabled="countdown > 0" @click="sendCode" style="width: 120px;">
+                    {{ countdown > 0 ? `${countdown}s 后重发` : '获取验证码' }}
+                  </el-button>
+                </div>
+              </el-form-item>
+              
+              <el-form-item prop="password">
+                <el-input 
+                  v-model="authForm.password" 
+                  type="password" 
+                  :placeholder="activeMode === 'reset' ? '请输入新密码' : '请输入密码'" 
+                  :prefix-icon="Lock"
+                  show-password
+                  size="large"
+                  @keyup.enter="handleSubmit"
+                />
+              </el-form-item>
+      
+              <el-form-item>
+                <el-button type="primary" class="submit-btn" size="large" :loading="loading" @click="handleSubmit">
+                  {{ activeMode === 'login' ? '登 录' : activeMode === 'register' ? '注 册' : '确 认 修 改' }}
+                </el-button>
+              </el-form-item>
+            </el-form>
     </el-card>
   </div>
 </template>
