@@ -97,7 +97,7 @@ const sendCode = async () => {
   }
 
   try {
-    const res = await request.post('/api/auth/sendCode', { email: authForm.email })
+    const res = await request.post('/auth/sendCode', { email: authForm.email })
     if (res.code === 200) {
       ElMessage.success('验证码发送成功，请查收邮件')
       countdown.value = 60
@@ -121,14 +121,14 @@ const handleSubmit = () => {
       // 【核心安全改造】：提交前将密码进行 SHA-256 单向加密，绝不传输明文
       const encryptedPassword = CryptoJS.SHA256(authForm.password).toString()
 
-      let url = '/api/auth/login'
+      let url = '/auth/login'
       let payload = { email: authForm.email, password: encryptedPassword }
 
       if (activeMode.value === 'register') {
-        url = '/api/auth/register'
+        url = '/auth/register'
         payload.code = authForm.code
       } else if (activeMode.value === 'reset') {
-        url = '/api/auth/resetPwd'
+        url = '/auth/resetPwd'
         payload.newPassword = encryptedPassword // 重置密码同样传输密文
         payload.code = authForm.code
       }
