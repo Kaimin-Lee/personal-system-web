@@ -36,6 +36,7 @@
             prefix-icon="Lock"
             show-password
             size="large"
+            @keyup.enter="handleSubmit"
           />
         </el-form-item>
 
@@ -53,10 +54,12 @@
 import { reactive, ref } from 'vue'
 import { Message, Lock, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-// 1. 引入我们刚刚封装好的请求工具
-import request from '../utils/request' 
+import request from '@/utils/request'
+import { useRouter } from 'vue-router'
+import CryptoJS from 'crypto-js' // 引入前端加密库
 
-const activeMode = ref('login')
+const router = useRouter()
+const activeMode = ref('login') 
 const authFormRef = ref(null)
 const loading = ref(false)
 const countdown = ref(0)
@@ -82,7 +85,6 @@ const handleModeSwitch = (mode) => {
   authFormRef.value.resetFields()
 }
 
-// 改造后的发送验证码逻辑
 const sendCode = async () => {
   if (!authForm.email) {
     ElMessage.warning('请先输入邮箱')
@@ -95,11 +97,8 @@ const sendCode = async () => {
   }
 
   try {
-    // 2. 这里只需要写接口路由，不需要写完整的 http://...
     const res = await request.post('/api/auth/sendCode', { email: authForm.email })
-    
-    // 3. 因为拦截器里已经提取了 response.data，所以这里直接用 res.code 判断
-    if (res.code === 200) { 
+    if (res.code === 200) {
       ElMessage.success('验证码发送成功，请查收邮件')
       countdown.value = 60
       timer = setInterval(() => {
@@ -110,26 +109,27 @@ const sendCode = async () => {
       ElMessage.error(res.message)
     }
   } catch (error) {
-    // 错误在拦截器里处理了，这里可以留空或做一些特殊处理
+    // 错误在拦截器处理
   }
 }
 
-// 改造后的统一提交逻辑
 const handleSubmit = () => {
   authFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
       
-      // 4. 同样，只写相对路径
+      // 【核心安全改造】：提交前将密码进行 SHA-256 单向加密，绝不传输明文
+      const encryptedPassword = CryptoJS.SHA256(authForm.password).toString()
+
       let url = '/api/auth/login'
-      let payload = { email: authForm.email, password: authForm.password }
+      let payload = { email: authForm.email, password: encryptedPassword }
 
       if (activeMode.value === 'register') {
         url = '/api/auth/register'
         payload.code = authForm.code
       } else if (activeMode.value === 'reset') {
         url = '/api/auth/resetPwd'
-        payload.newPassword = authForm.password
+        payload.newPassword = encryptedPassword // 重置密码同样传输密文
         payload.code = authForm.code
       }
 
@@ -138,8 +138,9 @@ const handleSubmit = () => {
         if (res.code === 200) {
           ElMessage.success(res.message)
           if (activeMode.value === 'login') {
+            // 登录成功，存储后端返回的 7天免登 Token
             localStorage.setItem('token', res.data)
-            // router.push('/dashboard') 
+            router.push('/dashboard') 
           } else {
             handleModeSwitch('login')
           }

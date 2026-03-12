@@ -25,8 +25,15 @@ request.interceptors.request.use(
 // 3. 响应拦截器：统一处理后端返回结构和报错
 request.interceptors.response.use(
   response => {
-    // 剥离最外层的 axios 包装，直接返回后端的 data 结构
-    return response.data
+    const res = response.data
+    // 【核心改造】：如果后端返回 401，说明 Token 失效/过期
+    if (res.code === 401) {
+      ElMessage.warning('登录已过期，请重新登录')
+      localStorage.removeItem('token') // 清除失效的 token
+      router.push('/login') // 强行跳转到登录页
+      return Promise.reject(new Error(res.message)) // 阻断业务请求继续往下走
+    }
+    return res
   },
   error => {
     ElMessage.error('网络异常，请检查后端服务是否启动')
@@ -34,5 +41,4 @@ request.interceptors.response.use(
   }
 )
 
-// 4. 最关键的一行：默认导出这个配置好的实例！(你刚才就是少了这一行)
 export default request
