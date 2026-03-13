@@ -3,6 +3,7 @@ name: 🎨 部署前端 (LifeOS Web)
 on:
   push:
     branches: [ "main", "master" ]
+    # 保持这里为空，只要推送到主分支就无条件触发，防止路径不匹配导致装死
 
 jobs:
   build-and-deploy:
@@ -15,9 +16,12 @@ jobs:
     - name: 🟢 配置 Node.js 环境
       uses: actions/setup-node@v3
       with:
-        node-version: '20'
+        # 【核心修复 1】：使用 Node 20，彻底解决 crypto.hash 报错！
+        node-version: '20' 
 
     - name: 📦 安装依赖并打包
+      # 【核心修复 2】：明确告诉机器，进到子文件夹里去执行 npm 
+      working-directory: ./personal-system-web 
       run: |
         npm install
         npm run build
@@ -28,6 +32,8 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
-        source: "dist/*"
+        # 【核心修复 3】：从正确的子文件夹里提取 dist
+        source: "personal-system-web/dist/*" 
         target: "/personal-system/personal-system-web/"
-        strip_components: 1
+        # 剥离前两级目录 (personal-system-web/dist/)，只把里面的内容扔过去
+        strip_components: 2
