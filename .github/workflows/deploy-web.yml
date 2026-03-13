@@ -3,7 +3,6 @@ name: 🎨 部署前端 (LifeOS Web)
 on:
   push:
     branches: [ "main", "master" ]
-    # 保持这里为空，只要推送到主分支就无条件触发，防止路径不匹配导致装死
 
 jobs:
   build-and-deploy:
@@ -19,13 +18,13 @@ jobs:
         node-version: '20' 
 
     - name: 🔍 验证 Node 版本
-      working-directory: ./personal-system-web
+      # 【修改点 1】：删除了 working-directory，直接在当前根目录执行
       run: |
         node --version
         npm --version
 
     - name: 📦 安装依赖并打包
-      working-directory: ./personal-system-web 
+      # 【修改点 2】：同样删除 working-directory
       run: |
         npm install
         npm run build
@@ -36,8 +35,8 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
-        # 【核心修复 3】：从正确的子文件夹里提取 dist
-        source: "personal-system-web/dist/*" 
+        # 【修改点 3】：因为在根目录打包，直接抓取根目录下的 dist 文件夹
+        source: "dist/*" 
         target: "/personal-system/personal-system-web/"
-        # 剥离前两级目录 (personal-system-web/dist/)，只把里面的内容扔过去
-        strip_components: 2
+        # 【修改点 4】：只剥离1层外壳（即去掉 dist/ 这个目录名）
+        strip_components: 1
