@@ -24,7 +24,7 @@ const routes = [
         name: 'Todo',
         component: () => import('../views/work/Todo.vue'),
         meta: { title: '项目进度看板' }
-      }
+      },
 	  {
 	          path: 'life/countdown',
 	          name: 'Countdown',
