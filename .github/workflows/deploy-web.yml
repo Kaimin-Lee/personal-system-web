@@ -30,4 +30,4 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         source: "dist/*"
         target: "/personal-system/personal-system-web/"
-        strip_components: 2
+        strip_components: 1
