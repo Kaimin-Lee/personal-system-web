@@ -19,13 +19,18 @@ const routes = [
         component: () => import('../views/dashboard/Index.vue'),
         meta: { title: '我的主页' }
       },
-      // 【核心修复】：在这里补上工作看板的路由！
       {
         path: 'work/todo',
         name: 'Todo',
         component: () => import('../views/work/Todo.vue'),
         meta: { title: '项目进度看板' }
       }
+	  {
+	          path: 'life/countdown',
+	          name: 'Countdown',
+	          component: () => import('../views/life/Countdown.vue'),
+	          meta: { title: '倒数日管理' }
+	        }
     ]
   }
 ]

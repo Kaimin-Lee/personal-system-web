@@ -32,7 +32,7 @@
             <span>学习 (Study)</span>
           </template>
           <el-menu-item index="/study/note">学习笔记</el-menu-item>
-          <el-menu-item index="/study/countdown">倒数日</el-menu-item>
+          
         </el-sub-menu>
 
         <el-sub-menu index="/life">
@@ -42,6 +42,7 @@
           </template>
           <el-menu-item index="/life/memo">备忘录</el-menu-item>
           <el-menu-item index="/life/ledger">记账本</el-menu-item>
+		  <el-menu-item index="/life/countdown">📅 倒数日</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>

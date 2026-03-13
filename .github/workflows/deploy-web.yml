@@ -1,0 +1,37 @@
+name: 🎨 部署前端 (LifeOS Web)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'personal-system-web/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 拉取最新代码
+      uses: actions/checkout@v3
+
+    - name: 🟢 配置 Node.js 环境
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: 📦 安装依赖并打包
+      working-directory: ./personal-system-web
+      run: |
+        npm install
+        npm run build
+
+    - name: 📤 增量同步 Dist 到阿里云
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        source: "personal-system-web/dist/*"
+        # 【修改点】：直接将前端文件同步到你指定的目录
+        target: "/personal-system/personal-system-web/"
+        strip_components: 2
