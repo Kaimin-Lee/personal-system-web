@@ -17,12 +17,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20' 
-	
-	- name: 🔍 验证 Node 版本
-	    working-directory: ./personal-system-web
-	    run: |
-	      node --version
-	      npm --version
+
+    - name: 🔍 验证 Node 版本
+      working-directory: ./personal-system-web
+      run: |
+        node --version
+        npm --version
 
     - name: 📦 安装依赖并打包
       working-directory: ./personal-system-web 
