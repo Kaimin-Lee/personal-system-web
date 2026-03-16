@@ -22,8 +22,9 @@
             <el-icon><Monitor /></el-icon>
             <span>工作 (Work)</span>
           </template>
-          <el-menu-item index="/work/todo">待办与看板</el-menu-item>
+          <el-menu-item index="/work/todo">项目进度看板</el-menu-item>
           <el-menu-item index="/work/shortcut">快捷导航</el-menu-item>
+		  <el-menu-item index="/work/geometry">几何计算器</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/study">

@@ -26,6 +26,12 @@ const routes = [
         meta: { title: '项目进度看板' }
       },
 	  {
+	          path: 'work/geometry',
+	          name: 'Geometry',
+	          component: () => import('../views/work/Geometry.vue'),
+	          meta: { title: '几何计算器' }
+	  },
+	  {
 	          path: 'life/countdown',
 	          name: 'Countdown',
 	          component: () => import('../views/life/Countdown.vue'),
