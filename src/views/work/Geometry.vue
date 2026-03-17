@@ -10,12 +10,29 @@
           </template>
 
           <el-tabs v-model="activeTab" class="custom-tabs">
+            
             <el-tab-pane label="🔴 圆形" name="circle">
-              <el-alert title="输入半径，自动推导全属性" type="info" :closable="false" class="mb-3" />
+              <el-alert title="智能推导：支持周长、面积逆推" type="info" :closable="false" class="mb-3" />
+              
+              <el-radio-group v-model="circleMode" class="mb-3 responsive-radio">
+                <el-radio-button label="direct">已知半径 (正推)</el-radio-button>
+                <el-radio-button label="inverseC">已知周长 (逆推)</el-radio-button>
+                <el-radio-button label="inverseS">已知面积 (逆推)</el-radio-button>
+              </el-radio-group>
+
               <el-form label-width="100px">
-                <el-form-item label="半径 (r)">
+                <el-form-item label="半径 (r)" v-show="circleMode === 'direct'">
                   <el-input-number v-model="circle.r" :min="0" :step="1" style="width: 100%" />
                 </el-form-item>
+                <el-form-item label="周长 (C)" v-show="circleMode === 'inverseC'">
+                  <el-input-number v-model="circle.c" :min="0" :step="1" style="width: 100%" />
+                </el-form-item>
+                <el-form-item label="面积 (S)" v-show="circleMode === 'inverseS'">
+                  <el-input-number v-model="circle.s" :min="0" :step="1" style="width: 100%" />
+                </el-form-item>
+                <div style="text-align: right; margin-top: -10px;">
+                  <el-button link type="primary" @click="resetCircle">↻ 重新输入</el-button>
+                </div>
               </el-form>
             </el-tab-pane>
 
@@ -80,11 +97,30 @@
             </el-tab-pane>
 
             <el-tab-pane label="🪣 圆台" name="frustum">
-              <el-alert title="推导圆台体积及表面积" type="warning" :closable="false" class="mb-3" />
+              <el-alert title="智能推导：支持体积、母线长逆推高" type="warning" :closable="false" class="mb-3" />
+              
+              <el-radio-group v-model="frustumMode" class="mb-3 responsive-radio">
+                <el-radio-button label="direct">已知高 (正推)</el-radio-button>
+                <el-radio-button label="inverseV">已知体积 (逆推)</el-radio-button>
+                <el-radio-button label="inverseL">已知母线长 (逆推)</el-radio-button>
+              </el-radio-group>
+
               <el-form label-width="110px">
                 <el-form-item label="顶面半径 (r1)"><el-input-number v-model="frustum.r1" :min="0" style="width: 100%" /></el-form-item>
                 <el-form-item label="底面半径 (r2)"><el-input-number v-model="frustum.r2" :min="0" style="width: 100%" /></el-form-item>
-                <el-form-item label="高 (h)"><el-input-number v-model="frustum.h" :min="0" style="width: 100%" /></el-form-item>
+                <el-form-item label="高 (h)" v-show="frustumMode === 'direct'">
+                  <el-input-number v-model="frustum.h" :min="0" style="width: 100%" />
+                </el-form-item>
+                <el-form-item label="体积 (V)" v-show="frustumMode === 'inverseV'">
+                  <el-input-number v-model="frustum.v" :min="0" style="width: 100%" />
+                </el-form-item>
+                <el-form-item label="母线长 (l)" v-show="frustumMode === 'inverseL'">
+                  <el-input-number v-model="frustum.l" :min="0" style="width: 100%" />
+                </el-form-item>
+
+                <div style="text-align: right; margin-top: -10px;">
+                  <el-button link type="primary" @click="resetFrustum">↻ 重新输入</el-button>
+                </div>
               </el-form>
             </el-tab-pane>
           </el-tabs>
@@ -143,16 +179,20 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '../../utils/request'
 
-const activeTab = ref('triangle') 
-const triangleMode = ref('right')
+const activeTab = ref('circle') 
 const historyList = ref([])
 
-const circle = reactive({ r: 0 })
+// 圆形状态
+const circleMode = ref('direct')
+const circle = reactive({ r: 0, c: 0, s: 0 })
+const resetCircle = () => { circle.r = 0; circle.c = 0; circle.s = 0; }
+
+// 三角形状态
+const triangleMode = ref('right')
 const rightTriangle = reactive({ a: 0, b: 0, c: 0 })
 const anyTriangle = reactive({ a: 0, b: 0, c: 0 })
-const cuboid = reactive({ l: 0, w: 0, h: 0 })
-const cone = reactive({ r: 0, h: 0 })
-const frustum = reactive({ r1: 0, r2: 0, h: 0 })
+const resetRightTriangle = () => { rightTriangle.a = 0; rightTriangle.b = 0; rightTriangle.c = 0; }
+const resetAnyTriangle = () => { anyTriangle.a = 0; anyTriangle.b = 0; anyTriangle.c = 0; }
 
 const isRtDisabled = (side) => {
   let filledCount = 0;
@@ -161,19 +201,43 @@ const isRtDisabled = (side) => {
   if (rightTriangle.c > 0) filledCount++;
   return filledCount >= 2 && rightTriangle[side] === 0;
 }
-const resetRightTriangle = () => { rightTriangle.a = 0; rightTriangle.b = 0; rightTriangle.c = 0; }
-const resetAnyTriangle = () => { anyTriangle.a = 0; anyTriangle.b = 0; anyTriangle.c = 0; }
+
+// 空间图形状态
+const cuboid = reactive({ l: 0, w: 0, h: 0 })
+const cone = reactive({ r: 0, h: 0 })
+
+// 圆台状态 (新增母线长 l 属性)
+const frustumMode = ref('direct')
+const frustum = reactive({ r1: 0, r2: 0, h: 0, v: 0, l: 0 })
+const resetFrustum = () => { frustum.r1 = 0; frustum.r2 = 0; frustum.h = 0; frustum.v = 0; frustum.l = 0; }
+
 
 const doCalculate = async () => {
   let shapeName = '', paramsStr = '', resultArr = []
 
   if (activeTab.value === 'circle') {
-    if (circle.r <= 0) return ElMessage.warning('半径必须大于 0')
-    shapeName = '圆形全属性'
-    paramsStr = `半径 r = ${circle.r}`
-    resultArr.push(`<b>直径 (d)</b>: ${circle.r * 2}`)
-    resultArr.push(`<b>周长 (C)</b>: ${(2 * Math.PI * circle.r).toFixed(2)}`)
-    resultArr.push(`<b>面积 (S)</b>: ${(Math.PI * Math.pow(circle.r, 2)).toFixed(2)}`)
+    let r = 0;
+    if (circleMode.value === 'direct') {
+      if (circle.r <= 0) return ElMessage.warning('半径必须大于 0')
+      r = circle.r
+      shapeName = '圆形 (正向推导)'
+      paramsStr = `半径 r = ${r}`
+    } else if (circleMode.value === 'inverseC') {
+      if (circle.c <= 0) return ElMessage.warning('周长必须大于 0')
+      r = circle.c / (2 * Math.PI)
+      shapeName = '圆形 (已知周长逆推)'
+      paramsStr = `周长 C = ${circle.c}`
+    } else if (circleMode.value === 'inverseS') {
+      if (circle.s <= 0) return ElMessage.warning('面积必须大于 0')
+      r = Math.sqrt(circle.s / Math.PI)
+      shapeName = '圆形 (已知面积逆推)'
+      paramsStr = `面积 S = ${circle.s}`
+    }
+
+    resultArr.push(`<b>推导半径 (r)</b>: ${r.toFixed(2)}`)
+    resultArr.push(`<b>推导直径 (d)</b>: ${(r * 2).toFixed(2)}`)
+    resultArr.push(`<b>计算周长 (C)</b>: ${(2 * Math.PI * r).toFixed(2)}`)
+    resultArr.push(`<b>计算面积 (S)</b>: ${(Math.PI * Math.pow(r, 2)).toFixed(2)}`)
   } 
   else if (activeTab.value === 'triangle') {
     if (triangleMode.value === 'right') {
@@ -240,17 +304,62 @@ const doCalculate = async () => {
   }
   else if (activeTab.value === 'frustum') {
     if (frustum.r1 === 0 && frustum.r2 === 0) return ElMessage.warning('顶面和底面半径不能同时为 0')
-    if (frustum.h <= 0) return ElMessage.warning('高必须大于 0')
-    shapeName = '3D 圆台'
-    paramsStr = `r1 = ${frustum.r1}, r2 = ${frustum.r2}, h = ${frustum.h}`
-    let l = Math.sqrt((frustum.r2 - frustum.r1)**2 + frustum.h**2); 
-    let s_lateral = Math.PI * (frustum.r1 + frustum.r2) * l;
-    let s_top = Math.PI * Math.pow(frustum.r1, 2);
-    let s_bottom = Math.PI * Math.pow(frustum.r2, 2);
-    resultArr.push(`<b>母线长 (l)</b>: ${l.toFixed(2)}`)
-    resultArr.push(`<b>体积 (V)</b>: ${(Math.PI * frustum.h * (Math.pow(frustum.r1, 2) + Math.pow(frustum.r2, 2) + frustum.r1 * frustum.r2) / 3).toFixed(2)}`)
-    resultArr.push(`<b>侧面积</b>: ${s_lateral.toFixed(2)}`)
-    resultArr.push(`<b>全面积 (S)</b>: ${(s_lateral + s_top + s_bottom).toFixed(2)}`)
+    
+    if (frustumMode.value === 'direct') {
+      if (frustum.h <= 0) return ElMessage.warning('高必须大于 0')
+      shapeName = '3D 圆台 (正向推导)'
+      paramsStr = `r1 = ${frustum.r1}, r2 = ${frustum.r2}, h = ${frustum.h}`
+      
+      let l = Math.sqrt(Math.pow(frustum.r2 - frustum.r1, 2) + Math.pow(frustum.h, 2)); 
+      let v = (Math.PI * frustum.h * (Math.pow(frustum.r1, 2) + Math.pow(frustum.r2, 2) + frustum.r1 * frustum.r2)) / 3;
+      let s_lateral = Math.PI * (frustum.r1 + frustum.r2) * l;
+      let s_top = Math.PI * Math.pow(frustum.r1, 2);
+      let s_bottom = Math.PI * Math.pow(frustum.r2, 2);
+      
+      resultArr.push(`<b>推导母线长 (l)</b>: ${l.toFixed(2)}`)
+      resultArr.push(`<b>计算体积 (V)</b>: ${v.toFixed(2)}`)
+      resultArr.push(`<b>计算侧面积</b>: ${s_lateral.toFixed(2)}`)
+      resultArr.push(`<b>计算全面积 (S)</b>: ${(s_lateral + s_top + s_bottom).toFixed(2)}`)
+    } 
+    else if (frustumMode.value === 'inverseV') {
+      if (frustum.v <= 0) return ElMessage.warning('体积必须大于 0')
+      shapeName = '3D 圆台 (已知体积逆推)'
+      paramsStr = `r1 = ${frustum.r1}, r2 = ${frustum.r2}, V = ${frustum.v}`
+      
+      let h = (3 * frustum.v) / (Math.PI * (Math.pow(frustum.r1, 2) + Math.pow(frustum.r2, 2) + frustum.r1 * frustum.r2));
+      let l = Math.sqrt(Math.pow(frustum.r2 - frustum.r1, 2) + Math.pow(h, 2)); 
+      let s_lateral = Math.PI * (frustum.r1 + frustum.r2) * l;
+      let s_top = Math.PI * Math.pow(frustum.r1, 2);
+      let s_bottom = Math.PI * Math.pow(frustum.r2, 2);
+      
+      resultArr.push(`<b>推导高 (h)</b>: ${h.toFixed(2)}`)
+      resultArr.push(`<b>推导母线长 (l)</b>: ${l.toFixed(2)}`)
+      resultArr.push(`<b>计算侧面积</b>: ${s_lateral.toFixed(2)}`)
+      resultArr.push(`<b>计算全面积 (S)</b>: ${(s_lateral + s_top + s_bottom).toFixed(2)}`)
+    }
+    // 👇 新增：已知母线长，逆推高
+    else if (frustumMode.value === 'inverseL') {
+      if (frustum.l <= 0) return ElMessage.warning('母线长必须大于 0')
+      
+      // 判断母线长是否合法（必须大于上下半径之差，即斜边大于直角边）
+      let dr = Math.abs(frustum.r2 - frustum.r1);
+      if (frustum.l <= dr) return ElMessage.warning('物理错误：母线长必须严格大于上下底面半径之差！')
+      
+      shapeName = '3D 圆台 (已知母线长逆推)'
+      paramsStr = `r1 = ${frustum.r1}, r2 = ${frustum.r2}, l = ${frustum.l}`
+      
+      // 勾股定理求高
+      let h = Math.sqrt(Math.pow(frustum.l, 2) - Math.pow(dr, 2));
+      let v = (Math.PI * h * (Math.pow(frustum.r1, 2) + Math.pow(frustum.r2, 2) + frustum.r1 * frustum.r2)) / 3;
+      let s_lateral = Math.PI * (frustum.r1 + frustum.r2) * frustum.l;
+      let s_top = Math.PI * Math.pow(frustum.r1, 2);
+      let s_bottom = Math.PI * Math.pow(frustum.r2, 2);
+      
+      resultArr.push(`<b>推导高 (h)</b>: ${h.toFixed(2)}`)
+      resultArr.push(`<b>计算体积 (V)</b>: ${v.toFixed(2)}`)
+      resultArr.push(`<b>计算侧面积</b>: ${s_lateral.toFixed(2)}`)
+      resultArr.push(`<b>计算全面积 (S)</b>: ${(s_lateral + s_top + s_bottom).toFixed(2)}`)
+    }
   }
 
   const finalResult = resultArr.join(' | ')
