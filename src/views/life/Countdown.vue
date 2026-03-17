@@ -28,7 +28,7 @@
       </el-col>
     </el-row>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '修改日子' : '新增日子'" width="400px">
+    <el-dialog v-model="dialogVisible" :title="form.id ? '修改日子' : '新增日子'" class="responsive-dialog">
       <el-form :model="form" label-width="80px">
         <el-form-item label="事件名称">
           <el-input v-model="form.eventName" placeholder="例如：考公、女朋友生日" />
@@ -62,38 +62,21 @@ const calculateDays = (date) => {
   const diff = new Date(date) - new Date().setHours(0,0,0,0)
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
-
 const fetchData = async () => {
   const res = await request.get('/countdown/list')
   if (res.code === 200) list.value = res.data
 }
-
-const handleAdd = () => {
-  form.value = { eventName: '', targetDate: '', isPinned: 0 }
-  dialogVisible.value = true
-}
-
-const handleEdit = (row) => {
-  form.value = { ...row }
-  dialogVisible.value = true
-}
-
+const handleAdd = () => { form.value = { eventName: '', targetDate: '', isPinned: 0 }; dialogVisible.value = true }
+const handleEdit = (row) => { form.value = { ...row }; dialogVisible.value = true }
 const submit = async () => {
-  const method = form.value.id ? 'put' : 'post'
-  const url = form.value.id ? '/countdown/update' : '/countdown/add'
-  const res = await request[method](url, form.value)
-  if (res.code === 200) {
-    ElMessage.success('操作成功')
-    dialogVisible.value = false
-    fetchData()
-  }
+  const res = await request[form.value.id ? 'put' : 'post'](form.value.id ? '/countdown/update' : '/countdown/add', form.value)
+  if (res.code === 200) { ElMessage.success('操作成功'); dialogVisible.value = false; fetchData() }
 }
-
 const handleDelete = (id) => {
   ElMessageBox.confirm('确定删除吗？').then(async () => {
     const res = await request.delete(`/countdown/delete/${id}`)
     if (res.code === 200) { fetchData(); ElMessage.success('已删除') }
-  })
+  }).catch(()=>{})
 }
 
 onMounted(fetchData)
@@ -109,16 +92,20 @@ onMounted(fetchData)
 }
 .countdown-card:hover { transform: translateY(-5px); }
 .is-pinned { border-top: 4px solid #E6A23C; }
-
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .actions { display: flex; gap: 10px; color: #909399; cursor: pointer; }
 .actions .el-icon:hover { color: #409EFF; }
 .actions .del-btn:hover { color: #f56c6c; }
-
 .event-info { text-align: center; }
 .event-name { font-size: 16px; color: #606266; margin-bottom: 10px; }
 .days-count { margin-bottom: 10px; }
 .days-count .number { font-size: 48px; font-weight: bold; color: #303133; }
 .days-count .unit { margin-left: 5px; color: #909399; }
 .target-date { font-size: 12px; color: #C0C4CC; }
+
+/* 响应式弹窗 */
+:deep(.responsive-dialog) { width: 400px; }
+@media screen and (max-width: 480px) {
+  :deep(.responsive-dialog) { width: 90% !important; }
+}
 </style>

@@ -1,6 +1,5 @@
 <template>
   <el-container class="layout-container">
-    
     <div v-if="isMobile && !isCollapse" class="mobile-mask" @click="toggleSidebar"></div>
 
     <el-aside 
@@ -96,7 +95,6 @@
     </el-container>
     
     <ContactAuthor ref="contactRef" />
-
   </el-container>
 </template>
 
@@ -110,40 +108,26 @@ import ContactAuthor from '@/components/ContactAuthor.vue'
 
 const router = useRouter()
 const route = useRoute()
-
-// 响应式状态管理
 const isCollapse = ref(false)
 const isMobile = ref(false)
-
-// 未读红点状态与轮询逻辑
 const hasUnread = ref(false)
 let unreadTimer = null
 
 const checkUnread = async () => {
   try {
     const res = await request.get('/message/unread')
-    if (res.code === 200) {
-      hasUnread.value = res.data
-    }
+    if (res.code === 200) hasUnread.value = res.data
   } catch (error) {}
 }
 
-// 检测窗口宽度
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768
-  if (isMobile.value) {
-    isCollapse.value = true
-  } else {
-    isCollapse.value = false
-  }
+  isCollapse.value = isMobile.value
 }
 
-// 监听窗口大小变化与轮询
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-  
-  // 启动未读消息轮询 (每3秒查一次)
   checkUnread()
   unreadTimer = setInterval(checkUnread, 3000)
 })
@@ -153,24 +137,14 @@ onUnmounted(() => {
   if (unreadTimer) clearInterval(unreadTimer)
 })
 
-// 切换侧边栏状态
-const toggleSidebar = () => {
-  isCollapse.value = !isCollapse.value
-}
+const toggleSidebar = () => isCollapse.value = !isCollapse.value
+const handleMenuSelect = () => { if (isMobile.value) isCollapse.value = true }
 
-// 移动端点击菜单项后自动收起侧边栏
-const handleMenuSelect = () => {
-  if (isMobile.value) {
-    isCollapse.value = true
-  }
-}
-
-// 绑定组件引用并触发打开
 const contactRef = ref(null)
 const openContactDrawer = () => {
   if (contactRef.value) {
     contactRef.value.open()
-    hasUnread.value = false // 点击打开时直接预测性消除红点，提升体验
+    hasUnread.value = false 
   }
 }
 
@@ -184,132 +158,43 @@ const handleCommand = (command) => {
 </script>
 
 <style scoped>
-.layout-container {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* 侧边栏基础与PC端样式 */
+.layout-container { height: 100vh; overflow: hidden; }
 .aside-menu {
-  background-color: #304156;
-  color: white;
+  background-color: #304156; color: white;
   transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s ease;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-x: hidden; display: flex; flex-direction: column;
 }
-
-/* 移动端侧边栏（悬浮抽屉式） */
 .aside-menu.is-mobile {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: 1000;
+  position: fixed; top: 0; left: 0; height: 100vh; z-index: 1000;
   box-shadow: 2px 0 8px rgba(0,0,0,0.15);
 }
-.aside-menu.is-mobile.is-hidden {
-  transform: translateX(-100%);
-}
-
-/* 移动端半透明遮罩 */
+.aside-menu.is-mobile.is-hidden { transform: translateX(-100%); }
 .mobile-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  backdrop-filter: blur(2px);
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5); z-index: 999; backdrop-filter: blur(2px);
 }
+.logo { height: 60px; line-height: 60px; text-align: center; border-bottom: 1px solid #1f2d3d; overflow: hidden; white-space: nowrap; }
+.logo h2 { margin: 0; color: #fff; font-size: 18px; }
+.el-menu-vertical { border-right: none; flex: 1; }
+.header { background-color: #fff; border-bottom: 1px solid #e6e6e6; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+.header-left { display: flex; align-items: center; }
+.hamburger { font-size: 22px; cursor: pointer; color: #606266; transition: color 0.3s; }
+.hamburger:hover { color: #409EFF; }
+.header-right { display: flex; align-items: center; }
+.contact-badge { margin-right: 28px; display: flex; align-items: center; }
+.contact-icon { font-size: 22px; color: #606266; cursor: pointer; transition: color 0.3s, transform 0.2s; }
+.contact-icon:hover { color: #409EFF; transform: scale(1.1); }
+.user-info { display: flex; align-items: center; cursor: pointer; color: #606266; outline: none; }
+.username { margin-left: 8px; margin-right: 4px; }
+.main-content { background-color: #f0f2f5; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-.logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
-  border-bottom: 1px solid #1f2d3d;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.logo h2 {
-  margin: 0;
-  color: #fff;
-  font-size: 18px;
-}
-.el-menu-vertical {
-  border-right: none;
-  flex: 1;
-}
-.header {
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-}
-.header-left {
-  display: flex;
-  align-items: center;
-}
-.hamburger {
-  font-size: 22px;
-  cursor: pointer;
-  color: #606266;
-  transition: color 0.3s;
-}
-.hamburger:hover {
-  color: #409EFF;
-}
-
-/* 👇 右侧布局与消息图标样式 */
-.header-right {
-  display: flex;
-  align-items: center;
-}
-.contact-badge {
-  margin-right: 28px; /* 通过修改这里可以控制它和右侧头像的距离 */
-  display: flex;
-  align-items: center;
-}
-.contact-icon {
-  font-size: 22px;
-  color: #606266;
-  cursor: pointer;
-  transition: color 0.3s, transform 0.2s;
-}
-.contact-icon:hover {
-  color: #409EFF;
-  transform: scale(1.1);
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #606266;
-}
-.username {
-  margin-left: 8px;
-  margin-right: 4px;
-}
-
-/* 主内容区域，增加原生滚动支持 */
-.main-content {
-  background-color: #f0f2f5;
-  padding: 20px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* 移动端主内容区域内边距微调 */
+/* 移动端深度适配 */
 @media screen and (max-width: 768px) {
-  .main-content {
-    padding: 10px;
-  }
-  .header {
-    padding: 0 15px;
-  }
+  .main-content { padding: 10px; }
+  .header { padding: 0 15px; }
+  .contact-badge { margin-right: 15px; }
+}
+@media screen and (max-width: 480px) {
+  .username { display: none; } /* 屏幕过小时隐藏名字，防止挤压 */
 }
 </style>

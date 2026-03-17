@@ -1,7 +1,7 @@
 <template>
   <div class="geometry-container">
     <el-row :gutter="24">
-      <el-col :xs="24" :md="12">
+      <el-col :xs="24" :md="12" class="mb-20">
         <el-card class="calc-card" shadow="hover">
           <template #header>
             <div class="card-header">
@@ -20,9 +20,9 @@
             </el-tab-pane>
 
             <el-tab-pane label="🔺 三角形" name="triangle">
-              <el-alert title="智能推导：根据你的已知条件选择模式" type="success" :closable="false" class="mb-3" />
+              <el-alert title="智能推导：根据已知条件选择模式" type="success" :closable="false" class="mb-3" />
               
-              <el-radio-group v-model="triangleMode" class="mb-3" style="display: flex; justify-content: center;">
+              <el-radio-group v-model="triangleMode" class="mb-3 responsive-radio">
                 <el-radio-button label="right">直角三角形 (知二推一)</el-radio-button>
                 <el-radio-button label="any">任意三角形 (知三求角)</el-radio-button>
               </el-radio-group>
@@ -143,11 +143,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '../../utils/request'
 
-const activeTab = ref('triangle') // 默认直接打开三角形面板
+const activeTab = ref('triangle') 
 const triangleMode = ref('right')
 const historyList = ref([])
 
-// 各模块动态参数
 const circle = reactive({ r: 0 })
 const rightTriangle = reactive({ a: 0, b: 0, c: 0 })
 const anyTriangle = reactive({ a: 0, b: 0, c: 0 })
@@ -155,7 +154,6 @@ const cuboid = reactive({ l: 0, w: 0, h: 0 })
 const cone = reactive({ r: 0, h: 0 })
 const frustum = reactive({ r1: 0, r2: 0, h: 0 })
 
-// --- 直角三角形交互锁逻辑 ---
 const isRtDisabled = (side) => {
   let filledCount = 0;
   if (rightTriangle.a > 0) filledCount++;
@@ -163,18 +161,11 @@ const isRtDisabled = (side) => {
   if (rightTriangle.c > 0) filledCount++;
   return filledCount >= 2 && rightTriangle[side] === 0;
 }
-const resetRightTriangle = () => {
-  rightTriangle.a = 0; rightTriangle.b = 0; rightTriangle.c = 0;
-}
-const resetAnyTriangle = () => {
-  anyTriangle.a = 0; anyTriangle.b = 0; anyTriangle.c = 0;
-}
+const resetRightTriangle = () => { rightTriangle.a = 0; rightTriangle.b = 0; rightTriangle.c = 0; }
+const resetAnyTriangle = () => { anyTriangle.a = 0; anyTriangle.b = 0; anyTriangle.c = 0; }
 
-// --- 核心推导逻辑 ---
 const doCalculate = async () => {
-  let shapeName = ''
-  let paramsStr = ''
-  let resultArr = []
+  let shapeName = '', paramsStr = '', resultArr = []
 
   if (activeTab.value === 'circle') {
     if (circle.r <= 0) return ElMessage.warning('半径必须大于 0')
@@ -187,30 +178,12 @@ const doCalculate = async () => {
   else if (activeTab.value === 'triangle') {
     if (triangleMode.value === 'right') {
       let { a, b, c } = rightTriangle;
-      if (!((a > 0 && b > 0) || (a > 0 && c > 0) || (b > 0 && c > 0))) {
-        return ElMessage.warning('请至少输入两条边的长度！')
-      }
+      if (!((a > 0 && b > 0) || (a > 0 && c > 0) || (b > 0 && c > 0))) return ElMessage.warning('请至少输入两条边的长度！')
 
-      if (a > 0 && b > 0) {
-        c = Math.sqrt(a**2 + b**2);
-        shapeName = '直角三角形'
-        paramsStr = `a = ${a}, b = ${b}`
-        resultArr.push(`<b>推导斜边 (c)</b>: ${c.toFixed(2)}`)
-      } else if (a > 0 && c > 0) {
-        if (a >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
-        b = Math.sqrt(c**2 - a**2);
-        shapeName = '直角三角形'
-        paramsStr = `a = ${a}, c = ${c}`
-        resultArr.push(`<b>推导直角边 (b)</b>: ${b.toFixed(2)}`)
-      } else if (b > 0 && c > 0) {
-        if (b >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
-        a = Math.sqrt(c**2 - b**2);
-        shapeName = '直角三角形'
-        paramsStr = `b = ${b}, c = ${c}`
-        resultArr.push(`<b>推导直角边 (a)</b>: ${a.toFixed(2)}`)
-      }
+      if (a > 0 && b > 0) { c = Math.sqrt(a**2 + b**2); shapeName = '直角三角形'; paramsStr = `a = ${a}, b = ${b}`; resultArr.push(`<b>推导斜边 (c)</b>: ${c.toFixed(2)}`) } 
+      else if (a > 0 && c > 0) { if (a >= c) return ElMessage.warning('直角边不能大于或等于斜边！'); b = Math.sqrt(c**2 - a**2); shapeName = '直角三角形'; paramsStr = `a = ${a}, c = ${c}`; resultArr.push(`<b>推导直角边 (b)</b>: ${b.toFixed(2)}`) } 
+      else if (b > 0 && c > 0) { if (b >= c) return ElMessage.warning('直角边不能大于或等于斜边！'); a = Math.sqrt(c**2 - b**2); shapeName = '直角三角形'; paramsStr = `b = ${b}, c = ${c}`; resultArr.push(`<b>推导直角边 (a)</b>: ${a.toFixed(2)}`) }
       
-      // 反三角函数计算内角角度
       const angleA = (Math.asin(a / c) * 180 / Math.PI).toFixed(2)
       const angleB = (Math.asin(b / c) * 180 / Math.PI).toFixed(2)
 
@@ -223,31 +196,19 @@ const doCalculate = async () => {
     } else if (triangleMode.value === 'any') {
       let { a, b, c } = anyTriangle;
       if (a <= 0 || b <= 0 || c <= 0) return ElMessage.warning('边长必须大于 0')
-      // 验证是否构成三角形
-      if (a + b <= c || a + c <= b || b + c <= a) {
-        return ElMessage.warning('不满足构成三角形的条件 (任意两边之和必须大于第三边)')
-      }
+      if (a + b <= c || a + c <= b || b + c <= a) return ElMessage.warning('不满足构成三角形的条件 (任意两边之和必须大于第三边)')
 
       paramsStr = `a = ${a}, b = ${b}, c = ${c}`
-      
-      // 智能判定三角形具体类型
       let sides = [a, b, c].sort((x, y) => x - y)
-      if (Math.abs(sides[0]**2 + sides[1]**2 - sides[2]**2) < 0.01) {
-        shapeName = '直角三角形 (由三边自动判定)'
-      } else if (a === b && b === c) {
-        shapeName = '等边三角形'
-      } else if (a === b || a === c || b === c) {
-        shapeName = '等腰三角形'
-      } else {
-        shapeName = '普通三角形'
-      }
+      if (Math.abs(sides[0]**2 + sides[1]**2 - sides[2]**2) < 0.01) shapeName = '直角三角形 (由三边自动判定)'
+      else if (a === b && b === c) shapeName = '等边三角形'
+      else if (a === b || a === c || b === c) shapeName = '等腰三角形'
+      else shapeName = '普通三角形'
 
-      // 余弦定理推导三个内角
       const angleA = (Math.acos((b**2 + c**2 - a**2) / (2 * b * c)) * 180 / Math.PI).toFixed(2);
       const angleB = (Math.acos((a**2 + c**2 - b**2) / (2 * a * c)) * 180 / Math.PI).toFixed(2);
-      const angleC = (180 - angleA - angleB).toFixed(2); // 保证三角和为180度
+      const angleC = (180 - angleA - angleB).toFixed(2); 
 
-      // 海伦公式推导面积
       const p = (a + b + c) / 2;
       const area = Math.sqrt(p * (p - a) * (p - b) * (p - c)).toFixed(2);
 
@@ -295,11 +256,7 @@ const doCalculate = async () => {
   const finalResult = resultArr.join(' | ')
 
   try {
-    await request.post('/geometry/history', {
-      shapeName: shapeName,
-      params: paramsStr,
-      result: finalResult
-    })
+    await request.post('/geometry/history', { shapeName: shapeName, params: paramsStr, result: finalResult })
     ElMessage.success('推导成功并已同步云端')
     fetchHistory()
   } catch (error) {
@@ -315,73 +272,40 @@ const formatResult = (resultStr) => {
 const fetchHistory = async () => {
   try {
     const res = await request.get('/geometry/history')
-    if (res.code === 200) {
-      historyList.value = res.data
-    }
-  } catch (error) {
-    console.error('获取历史记录失败')
-  }
+    if (res.code === 200) historyList.value = res.data
+  } catch (error) { }
 }
 
 const clearHistory = async () => {
   try {
     const res = await request.delete('/geometry/history')
-    if (res.code === 200) {
-      ElMessage.success('云端记录已彻底清空')
-      historyList.value = []
-    }
-  } catch (error) {
-    ElMessage.error('清空失败')
-  }
+    if (res.code === 200) { ElMessage.success('已彻底清空'); historyList.value = [] }
+  } catch (error) { ElMessage.error('清空失败') }
 }
 
-onMounted(() => {
-  fetchHistory()
-})
+onMounted(() => fetchHistory())
 </script>
 
 <style scoped>
-.geometry-container {
-  padding: 20px;
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.card-header .title {
-  font-weight: bold;
-  font-size: 16px;
-  color: #303133;
-}
-.mb-3 {
-  margin-bottom: 20px;
-}
-.w-100 {
-  width: 100%;
-}
-.action-bar {
-  margin-top: 30px;
-}
-.timeline-inner-card {
-  background-color: #f8f9fa;
-  border: 1px solid #ebeef5;
-}
-.record-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.params-text {
-  font-size: 13px;
-  color: #606266;
-}
-.result-text {
-  font-size: 14px;
-  color: #303133;
-  line-height: 1.6;
-}
-:deep(.el-tabs__item) {
-  font-size: 15px;
+.geometry-container { padding: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header .title { font-weight: bold; font-size: 16px; color: #303133; }
+.mb-3 { margin-bottom: 20px; }
+.w-100 { width: 100%; }
+.action-bar { margin-top: 30px; }
+.timeline-inner-card { background-color: #f8f9fa; border: 1px solid #ebeef5; }
+.record-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.params-text { font-size: 13px; color: #606266; }
+.result-text { font-size: 14px; color: #303133; line-height: 1.6; }
+:deep(.el-tabs__item) { font-size: 15px; }
+.responsive-radio { display: flex; justify-content: center; }
+
+/* 移动端特殊深度适配 */
+@media screen and (max-width: 768px) {
+  .geometry-container { padding: 10px; }
+  .mb-20 { margin-bottom: 20px; }
+  /* 防止单选按钮挤压换行，保证样式不乱 */
+  .responsive-radio { flex-wrap: wrap; gap: 10px; }
+  :deep(.el-radio-button__inner) { border-radius: 4px !important; border-left: 1px solid #dcdfe6 !important; }
 }
 </style>
