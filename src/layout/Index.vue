@@ -143,7 +143,7 @@ onMounted(() => {
   window.addEventListener('resize', checkMobile)
   
   checkUnread()
-  unreadTimer = setInterval(checkUnread, 3000)
+  unreadTimer = setInterval(checkUnread, 60000)
 })
 
 onUnmounted(() => {
