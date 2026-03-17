@@ -64,7 +64,16 @@
             <component :is="isCollapse ? 'Expand' : 'Fold'" />
           </el-icon>
         </div>
+        
         <div class="header-right">
+          <el-tooltip content="联系作者" placement="bottom">
+            <el-badge :is-dot="hasUnread" class="contact-badge">
+              <el-icon class="contact-icon" @click="openContactDrawer">
+                <ChatLineRound />
+              </el-icon>
+            </el-badge>
+          </el-tooltip>
+
           <el-dropdown @command="handleCommand">
             <span class="el-dropdown-link user-info">
               <el-avatar size="small" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
@@ -85,14 +94,19 @@
         <router-view></router-view>
       </el-main>
     </el-container>
+    
+    <ContactAuthor ref="contactRef" />
+
   </el-container>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Odometer, Monitor, Reading, Coffee, ArrowDown, Expand, Fold } from '@element-plus/icons-vue'
+import { Odometer, Monitor, Reading, Coffee, ArrowDown, Expand, Fold, ChatLineRound } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
+import ContactAuthor from '@/components/ContactAuthor.vue' 
 
 const router = useRouter()
 const route = useRoute()
@@ -101,10 +115,22 @@ const route = useRoute()
 const isCollapse = ref(false)
 const isMobile = ref(false)
 
+// 未读红点状态与轮询逻辑
+const hasUnread = ref(false)
+let unreadTimer = null
+
+const checkUnread = async () => {
+  try {
+    const res = await request.get('/message/unread')
+    if (res.code === 200) {
+      hasUnread.value = res.data
+    }
+  } catch (error) {}
+}
+
 // 检测窗口宽度
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768
-  // 移动端默认收起侧边栏，PC端默认展开
   if (isMobile.value) {
     isCollapse.value = true
   } else {
@@ -112,14 +138,19 @@ const checkMobile = () => {
   }
 }
 
-// 监听窗口大小变化
+// 监听窗口大小变化与轮询
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  
+  // 启动未读消息轮询 (每3秒查一次)
+  checkUnread()
+  unreadTimer = setInterval(checkUnread, 3000)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  if (unreadTimer) clearInterval(unreadTimer)
 })
 
 // 切换侧边栏状态
@@ -131,6 +162,15 @@ const toggleSidebar = () => {
 const handleMenuSelect = () => {
   if (isMobile.value) {
     isCollapse.value = true
+  }
+}
+
+// 绑定组件引用并触发打开
+const contactRef = ref(null)
+const openContactDrawer = () => {
+  if (contactRef.value) {
+    contactRef.value.open()
+    hasUnread.value = false // 点击打开时直接预测性消除红点，提升体验
   }
 }
 
@@ -222,6 +262,28 @@ const handleCommand = (command) => {
 .hamburger:hover {
   color: #409EFF;
 }
+
+/* 👇 右侧布局与消息图标样式 */
+.header-right {
+  display: flex;
+  align-items: center;
+}
+.contact-badge {
+  margin-right: 28px; /* 通过修改这里可以控制它和右侧头像的距离 */
+  display: flex;
+  align-items: center;
+}
+.contact-icon {
+  font-size: 22px;
+  color: #606266;
+  cursor: pointer;
+  transition: color 0.3s, transform 0.2s;
+}
+.contact-icon:hover {
+  color: #409EFF;
+  transform: scale(1.1);
+}
+
 .user-info {
   display: flex;
   align-items: center;
