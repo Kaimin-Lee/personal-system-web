@@ -32,6 +32,12 @@ const routes = [
 	          meta: { title: '几何计算器' }
 	  },
 	  {
+	          path: 'work/shortcut',
+	          name: 'Shortcut',
+	          component: () => import('../views/work/Shortcut.vue'),
+	          meta: { title: '快捷导航' }
+	  },
+	  {
 	          path: 'life/countdown',
 	          name: 'Countdown',
 	          component: () => import('../views/life/Countdown.vue'),
