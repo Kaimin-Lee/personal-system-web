@@ -4,20 +4,20 @@
       
       <template #header>
         <div class="auth-header">
-          <h2>LifeOS 个人数字中枢</h2>
+          <h2 class="glow-title">LifeOS 个人数字中枢</h2>
           <span>Digital Workspace & Life Management</span>
         </div>
       </template>
 
       <el-menu :default-active="activeMode" mode="horizontal" @select="handleModeSwitch" class="mode-menu">
-        <el-menu-item index="login">登录</el-menu-item>
-        <el-menu-item index="register">注册</el-menu-item>
-        <el-menu-item index="reset">找回密码</el-menu-item>
+        <el-menu-item index="login">系统登入</el-menu-item>
+        <el-menu-item index="register">创建账户</el-menu-item>
+        <el-menu-item index="reset">密钥重置</el-menu-item>
       </el-menu>
 
       <el-form :model="authForm" :rules="rules" ref="authFormRef" label-width="0" class="auth-form">
         <el-form-item prop="email">
-          <el-input v-model="authForm.email" placeholder="请输入常用邮箱" :prefix-icon="Message" size="large" />
+          <el-input v-model="authForm.email" placeholder="请输入系统邮箱" :prefix-icon="Message" size="large" />
         </el-form-item>
 
         <el-form-item prop="code" v-if="activeMode !== 'login'">
@@ -33,7 +33,7 @@
           <el-input 
             v-model="authForm.password" 
             type="password" 
-            :placeholder="activeMode === 'reset' ? '请输入新密码' : '请输入密码'" 
+            :placeholder="activeMode === 'reset' ? '请输入新安全密钥' : '请输入安全密钥'" 
             :prefix-icon="Lock"
             show-password
             size="large"
@@ -41,9 +41,9 @@
           />
         </el-form-item>
 
-        <el-form-item>
+        <el-form-item style="margin-top: 30px;">
           <el-button type="primary" class="submit-btn" size="large" :loading="loading" @click="handleSubmit">
-            {{ activeMode === 'login' ? '登 录' : activeMode === 'register' ? '注 册' : '确 认 修 改' }}
+            {{ activeMode === 'login' ? '启 动 连 接' : activeMode === 'register' ? '注 册 节 点' : '重 构 密 钥' }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -67,19 +67,15 @@ const loading = ref(false)
 const countdown = ref(0)
 let timer = null
 
-const authForm = reactive({
-  email: '',
-  password: '',
-  code: ''
-})
+const authForm = reactive({ email: '', password: '', code: '' })
 
 const rules = reactive({
   email: [
-    { required: true, message: '邮箱不能为空', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+    { required: true, message: '系统邮箱不可为空', trigger: 'blur' },
+    { type: 'email', message: '非法邮箱格式协议', trigger: 'blur' }
   ],
-  password: [{ required: true, message: '密码不能为空', trigger: 'blur' }],
-  code: [{ required: true, message: '验证码不能为空', trigger: 'blur' }]
+  password: [{ required: true, message: '安全密钥不可为空', trigger: 'blur' }],
+  code: [{ required: true, message: '验证序列不可为空', trigger: 'blur' }]
 })
 
 const handleModeSwitch = (mode) => {
@@ -88,20 +84,14 @@ const handleModeSwitch = (mode) => {
 }
 
 const sendCode = async () => {
-  if (!authForm.email) {
-    ElMessage.warning('请先输入邮箱')
-    return
-  }
+  if (!authForm.email) return ElMessage.warning('请先输入系统邮箱')
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(authForm.email)) {
-    ElMessage.warning('邮箱格式不正确')
-    return
-  }
+  if (!emailRegex.test(authForm.email)) return ElMessage.warning('非法邮箱格式协议')
 
   try {
     const res = await request.post('/auth/sendCode', { email: authForm.email })
     if (res.code === 200) {
-      ElMessage.success('验证码发送成功，请查收邮件')
+      ElMessage.success('验证序列已发送，请查收邮件')
       countdown.value = 60
       timer = setInterval(() => {
         countdown.value--
@@ -155,64 +145,140 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
+/* 核心：赛博幻境背景 */
 .auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #050a15;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
   padding: 20px;
 }
+
+/* 毛玻璃登录面板 */
 .auth-card {
-  width: 100%; /* 移动端占比 */
-  max-width: 420px; /* PC端最大宽度 */
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 100%; 
+  max-width: 420px; 
+  border-radius: 16px;
+  background: rgba(10, 15, 30, 0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(0, 243, 255, 0.3) !important;
+  box-shadow: 0 0 40px rgba(0, 243, 255, 0.15) !important;
 }
+
 .auth-header {
   text-align: center;
+  padding-top: 10px;
 }
-.auth-header h2 {
+.glow-title {
   margin: 0 0 5px 0;
-  color: #303133;
+  color: #e2e8f0;
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.8);
+  font-size: 24px;
+  letter-spacing: 1px;
 }
 .auth-header span {
-  color: #909399;
-  font-size: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+  letter-spacing: 2px;
 }
+
+/* 顶部模式切换菜单深度美化 */
 .mode-menu {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
-  border-bottom: none;
+  margin-bottom: 25px;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 243, 255, 0.15) !important;
 }
+:deep(.el-menu-item) {
+  color: #94a3b8 !important;
+  font-size: 15px;
+  transition: all 0.3s;
+}
+:deep(.el-menu-item.is-active) {
+  color: #00f3ff !important;
+  border-bottom: 2px solid #00f3ff !important;
+  background-color: transparent !important;
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+}
+:deep(.el-menu-item:hover) {
+  background-color: rgba(0, 243, 255, 0.05) !important;
+  color: #e2e8f0 !important;
+}
+
 .auth-form {
   padding: 0 10px;
 }
+
+/* 输入框定制化 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 243, 255, 0.15) !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease;
+}
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00f3ff !important;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.3) !important;
+}
+:deep(.el-input__inner) {
+  color: #e2e8f0 !important;
+}
+:deep(.el-input__prefix-inner) {
+  color: #00f3ff !important;
+}
+
 .code-input-group {
   display: flex;
   width: 100%;
-  gap: 10px; /* 优雅的间距替代 margin */
+  gap: 12px; 
 }
 .code-input {
   flex: 1;
 }
+
+/* 发送验证码按钮重做 */
 .code-btn {
-  width: 110px;
+  width: 115px;
   padding: 0;
+  background: rgba(0, 243, 255, 0.05) !important;
+  border: 1px solid rgba(0, 243, 255, 0.3) !important;
+  color: #00f3ff !important;
+  transition: all 0.3s;
 }
-.submit-btn {
-  width: 100%;
-  border-radius: 5px;
-  font-weight: bold;
+.code-btn:hover:not(:disabled) {
+  background: rgba(0, 243, 255, 0.15) !important;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.3) !important;
+}
+.code-btn:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #64748b !important;
 }
 
-/* 移动端特殊适配 */
+/* 主按钮流光特效 */
+.submit-btn {
+  width: 100%;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 4px;
+}
+
 @media screen and (max-width: 480px) {
   .auth-card {
-    border-radius: 15px;
+    border-radius: 20px;
+    border: none !important;
+    background: rgba(10, 15, 30, 0.8) !important;
   }
-  .auth-header h2 {
+  .glow-title {
     font-size: 20px;
   }
   .auth-form {
