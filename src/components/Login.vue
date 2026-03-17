@@ -22,8 +22,8 @@
 
         <el-form-item prop="code" v-if="activeMode !== 'login'">
           <div class="code-input-group">
-            <el-input v-model="authForm.code" placeholder="验证码" :prefix-icon="Key" size="large" style="flex: 1; margin-right: 10px;" />
-            <el-button size="large" :disabled="countdown > 0" @click="sendCode" style="width: 120px;">
+            <el-input v-model="authForm.code" placeholder="验证码" :prefix-icon="Key" size="large" class="code-input" />
+            <el-button size="large" :disabled="countdown > 0" @click="sendCode" class="code-btn">
               {{ countdown > 0 ? `${countdown}s 后重发` : '获取验证码' }}
             </el-button>
           </div>
@@ -58,7 +58,7 @@ import { Message, Lock, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { useRouter } from 'vue-router'
-import CryptoJS from 'crypto-js' // 引入前端加密库
+import CryptoJS from 'crypto-js' 
 
 const router = useRouter()
 const activeMode = ref('login') 
@@ -110,17 +110,13 @@ const sendCode = async () => {
     } else {
       ElMessage.error(res.message)
     }
-  } catch (error) {
-    // 错误在拦截器处理
-  }
+  } catch (error) {}
 }
 
 const handleSubmit = () => {
   authFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
-      
-      // 【核心安全改造】：提交前将密码进行 SHA-256 单向加密，绝不传输明文
       const encryptedPassword = CryptoJS.SHA256(authForm.password).toString()
 
       let url = '/auth/login'
@@ -131,7 +127,7 @@ const handleSubmit = () => {
         payload.code = authForm.code
       } else if (activeMode.value === 'reset') {
         url = '/auth/resetPwd'
-        payload.newPassword = encryptedPassword // 重置密码同样传输密文
+        payload.newPassword = encryptedPassword 
         payload.code = authForm.code
       }
 
@@ -140,16 +136,8 @@ const handleSubmit = () => {
         if (res.code === 200) {
           ElMessage.success(res.message)
           if (activeMode.value === 'login') {
-            // 登录成功，存储后端返回的 7天免登 Token
-            console.log('登录响应数据:', res)
             const token = res.data?.token || res.data
-            console.log('提取的 token:', token)
-            if (token) {
-              localStorage.setItem('token', token)
-              console.log('token 已存储到 localStorage')
-            } else {
-              console.error('未能从响应中提取 token')
-            }
+            if (token) localStorage.setItem('token', token)
             router.push('/dashboard')
           } else {
             handleModeSwitch('login')
@@ -158,7 +146,6 @@ const handleSubmit = () => {
           ElMessage.error(res.message)
         }
       } catch (error) {
-         // 错误拦截器已处理
       } finally {
         loading.value = false
       }
@@ -172,11 +159,13 @@ const handleSubmit = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 .auth-card {
-  width: 420px;
+  width: 100%; /* 移动端占比 */
+  max-width: 420px; /* PC端最大宽度 */
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
@@ -203,10 +192,31 @@ const handleSubmit = () => {
 .code-input-group {
   display: flex;
   width: 100%;
+  gap: 10px; /* 优雅的间距替代 margin */
+}
+.code-input {
+  flex: 1;
+}
+.code-btn {
+  width: 110px;
+  padding: 0;
 }
 .submit-btn {
   width: 100%;
   border-radius: 5px;
   font-weight: bold;
+}
+
+/* 移动端特殊适配 */
+@media screen and (max-width: 480px) {
+  .auth-card {
+    border-radius: 15px;
+  }
+  .auth-header h2 {
+    font-size: 20px;
+  }
+  .auth-form {
+    padding: 0;
+  }
 }
 </style>

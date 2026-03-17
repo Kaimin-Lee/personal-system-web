@@ -19,24 +19,47 @@
               </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="📐 直角三角形" name="rightTriangle">
-              <el-alert title="输入任意两边，自动置灰第三边并推导" type="success" :closable="false" class="mb-3" />
+            <el-tab-pane label="🔺 三角形" name="triangle">
+              <el-alert title="智能推导：根据你的已知条件选择模式" type="success" :closable="false" class="mb-3" />
               
-              <el-form label-width="100px">
-                <el-form-item label="直角边 (a)">
-                  <el-input-number v-model="rightTriangle.a" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('a')" />
-                </el-form-item>
-                <el-form-item label="直角边 (b)">
-                  <el-input-number v-model="rightTriangle.b" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('b')" />
-                </el-form-item>
-                <el-form-item label="斜边 (c)">
-                  <el-input-number v-model="rightTriangle.c" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('c')" />
-                </el-form-item>
-                
-                <div style="text-align: right; margin-top: -10px;">
-                  <el-button link type="primary" @click="resetRightTriangle">↻ 重新输入</el-button>
-                </div>
-              </el-form>
+              <el-radio-group v-model="triangleMode" class="mb-3" style="display: flex; justify-content: center;">
+                <el-radio-button label="right">直角三角形 (知二推一)</el-radio-button>
+                <el-radio-button label="any">任意三角形 (知三求角)</el-radio-button>
+              </el-radio-group>
+
+              <div v-show="triangleMode === 'right'">
+                <el-form label-width="100px">
+                  <el-form-item label="直角边 (a)">
+                    <el-input-number v-model="rightTriangle.a" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('a')" />
+                  </el-form-item>
+                  <el-form-item label="直角边 (b)">
+                    <el-input-number v-model="rightTriangle.b" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('b')" />
+                  </el-form-item>
+                  <el-form-item label="斜边 (c)">
+                    <el-input-number v-model="rightTriangle.c" :min="0" :step="1" style="width: 100%" :disabled="isRtDisabled('c')" />
+                  </el-form-item>
+                  <div style="text-align: right; margin-top: -10px;">
+                    <el-button link type="primary" @click="resetRightTriangle">↻ 重新输入</el-button>
+                  </div>
+                </el-form>
+              </div>
+
+              <div v-show="triangleMode === 'any'">
+                <el-form label-width="100px">
+                  <el-form-item label="边长 (a)">
+                    <el-input-number v-model="anyTriangle.a" :min="0" :step="1" style="width: 100%" />
+                  </el-form-item>
+                  <el-form-item label="边长 (b)">
+                    <el-input-number v-model="anyTriangle.b" :min="0" :step="1" style="width: 100%" />
+                  </el-form-item>
+                  <el-form-item label="边长 (c)">
+                    <el-input-number v-model="anyTriangle.c" :min="0" :step="1" style="width: 100%" />
+                  </el-form-item>
+                  <div style="text-align: right; margin-top: -10px;">
+                    <el-button link type="primary" @click="resetAnyTriangle">↻ 重新输入</el-button>
+                  </div>
+                </el-form>
+              </div>
             </el-tab-pane>
 
             <el-tab-pane label="📦 长方体" name="cuboid">
@@ -118,32 +141,33 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import request from '../../utils/request' // 确保你的 axios 实例路径正确
+import request from '../../utils/request'
 
-const activeTab = ref('circle')
+const activeTab = ref('triangle') // 默认直接打开三角形面板
+const triangleMode = ref('right')
 const historyList = ref([])
 
 // 各模块动态参数
 const circle = reactive({ r: 0 })
 const rightTriangle = reactive({ a: 0, b: 0, c: 0 })
+const anyTriangle = reactive({ a: 0, b: 0, c: 0 })
 const cuboid = reactive({ l: 0, w: 0, h: 0 })
 const cone = reactive({ r: 0, h: 0 })
 const frustum = reactive({ r1: 0, r2: 0, h: 0 })
 
-// --- 直角三角形交互逻辑 ---
-// 动态侦测是否置灰某个输入框
+// --- 直角三角形交互锁逻辑 ---
 const isRtDisabled = (side) => {
   let filledCount = 0;
   if (rightTriangle.a > 0) filledCount++;
   if (rightTriangle.b > 0) filledCount++;
   if (rightTriangle.c > 0) filledCount++;
-  
-  // 如果已经填了2个及以上，且当前这个框是空的(0)，就把它置灰
   return filledCount >= 2 && rightTriangle[side] === 0;
 }
-// 一键重置三角形条件
 const resetRightTriangle = () => {
   rightTriangle.a = 0; rightTriangle.b = 0; rightTriangle.c = 0;
+}
+const resetAnyTriangle = () => {
+  anyTriangle.a = 0; anyTriangle.b = 0; anyTriangle.c = 0;
 }
 
 // --- 核心推导逻辑 ---
@@ -160,33 +184,80 @@ const doCalculate = async () => {
     resultArr.push(`<b>周长 (C)</b>: ${(2 * Math.PI * circle.r).toFixed(2)}`)
     resultArr.push(`<b>面积 (S)</b>: ${(Math.PI * Math.pow(circle.r, 2)).toFixed(2)}`)
   } 
-  else if (activeTab.value === 'rightTriangle') {
-    let { a, b, c } = rightTriangle;
-    // 校验是否填了至少两个条件
-    if (!((a > 0 && b > 0) || (a > 0 && c > 0) || (b > 0 && c > 0))) {
-      return ElMessage.warning('请至少输入两条边的长度！')
-    }
+  else if (activeTab.value === 'triangle') {
+    if (triangleMode.value === 'right') {
+      let { a, b, c } = rightTriangle;
+      if (!((a > 0 && b > 0) || (a > 0 && c > 0) || (b > 0 && c > 0))) {
+        return ElMessage.warning('请至少输入两条边的长度！')
+      }
 
-    if (a > 0 && b > 0) {
-      c = Math.sqrt(a**2 + b**2);
-      shapeName = '直角三角形 (已知两直角边)'
-      paramsStr = `a = ${a}, b = ${b}`
-      resultArr.push(`<b>推导斜边 (c)</b>: ${c.toFixed(2)}`)
-    } else if (a > 0 && c > 0) {
-      if (a >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
-      b = Math.sqrt(c**2 - a**2);
-      shapeName = '直角三角形 (已知 a 和 c)'
-      paramsStr = `a = ${a}, c = ${c}`
-      resultArr.push(`<b>推导直角边 (b)</b>: ${b.toFixed(2)}`)
-    } else if (b > 0 && c > 0) {
-      if (b >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
-      a = Math.sqrt(c**2 - b**2);
-      shapeName = '直角三角形 (已知 b 和 c)'
-      paramsStr = `b = ${b}, c = ${c}`
-      resultArr.push(`<b>推导直角边 (a)</b>: ${a.toFixed(2)}`)
+      if (a > 0 && b > 0) {
+        c = Math.sqrt(a**2 + b**2);
+        shapeName = '直角三角形'
+        paramsStr = `a = ${a}, b = ${b}`
+        resultArr.push(`<b>推导斜边 (c)</b>: ${c.toFixed(2)}`)
+      } else if (a > 0 && c > 0) {
+        if (a >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
+        b = Math.sqrt(c**2 - a**2);
+        shapeName = '直角三角形'
+        paramsStr = `a = ${a}, c = ${c}`
+        resultArr.push(`<b>推导直角边 (b)</b>: ${b.toFixed(2)}`)
+      } else if (b > 0 && c > 0) {
+        if (b >= c) return ElMessage.warning('直角边不能大于或等于斜边！')
+        a = Math.sqrt(c**2 - b**2);
+        shapeName = '直角三角形'
+        paramsStr = `b = ${b}, c = ${c}`
+        resultArr.push(`<b>推导直角边 (a)</b>: ${a.toFixed(2)}`)
+      }
+      
+      // 反三角函数计算内角角度
+      const angleA = (Math.asin(a / c) * 180 / Math.PI).toFixed(2)
+      const angleB = (Math.asin(b / c) * 180 / Math.PI).toFixed(2)
+
+      resultArr.push(`<b>面积 (S)</b>: ${(0.5 * a * b).toFixed(2)}`)
+      resultArr.push(`<b>周长 (L)</b>: ${(a + b + c).toFixed(2)}`)
+      resultArr.push(`<b>∠A (对a边)</b>: ${angleA}°`)
+      resultArr.push(`<b>∠B (对b边)</b>: ${angleB}°`)
+      resultArr.push(`<b>∠C (对斜边)</b>: 90.00°`)
+
+    } else if (triangleMode.value === 'any') {
+      let { a, b, c } = anyTriangle;
+      if (a <= 0 || b <= 0 || c <= 0) return ElMessage.warning('边长必须大于 0')
+      // 验证是否构成三角形
+      if (a + b <= c || a + c <= b || b + c <= a) {
+        return ElMessage.warning('不满足构成三角形的条件 (任意两边之和必须大于第三边)')
+      }
+
+      paramsStr = `a = ${a}, b = ${b}, c = ${c}`
+      
+      // 智能判定三角形具体类型
+      let sides = [a, b, c].sort((x, y) => x - y)
+      if (Math.abs(sides[0]**2 + sides[1]**2 - sides[2]**2) < 0.01) {
+        shapeName = '直角三角形 (由三边自动判定)'
+      } else if (a === b && b === c) {
+        shapeName = '等边三角形'
+      } else if (a === b || a === c || b === c) {
+        shapeName = '等腰三角形'
+      } else {
+        shapeName = '普通三角形'
+      }
+
+      // 余弦定理推导三个内角
+      const angleA = (Math.acos((b**2 + c**2 - a**2) / (2 * b * c)) * 180 / Math.PI).toFixed(2);
+      const angleB = (Math.acos((a**2 + c**2 - b**2) / (2 * a * c)) * 180 / Math.PI).toFixed(2);
+      const angleC = (180 - angleA - angleB).toFixed(2); // 保证三角和为180度
+
+      // 海伦公式推导面积
+      const p = (a + b + c) / 2;
+      const area = Math.sqrt(p * (p - a) * (p - b) * (p - c)).toFixed(2);
+
+      resultArr.push(`<b>几何判定</b>: ${shapeName}`)
+      resultArr.push(`<b>面积 (S)</b>: ${area}`)
+      resultArr.push(`<b>周长 (L)</b>: ${(a + b + c).toFixed(2)}`)
+      resultArr.push(`<b>∠A (对a边)</b>: ${angleA}°`)
+      resultArr.push(`<b>∠B (对b边)</b>: ${angleB}°`)
+      resultArr.push(`<b>∠C (对c边)</b>: ${angleC}°`)
     }
-    resultArr.push(`<b>面积 (S)</b>: ${(0.5 * a * b).toFixed(2)}`)
-    resultArr.push(`<b>周长 (L)</b>: ${(a + b + c).toFixed(2)}`)
   }
   else if (activeTab.value === 'cuboid') {
     if (cuboid.l <= 0 || cuboid.w <= 0 || cuboid.h <= 0) return ElMessage.warning('长宽高必须大于 0')
@@ -200,7 +271,7 @@ const doCalculate = async () => {
     if (cone.r <= 0 || cone.h <= 0) return ElMessage.warning('底面半径和高必须大于 0')
     shapeName = '3D 圆锥'
     paramsStr = `r = ${cone.r}, h = ${cone.h}`
-    let l = Math.sqrt(cone.r**2 + cone.h**2); // 母线长
+    let l = Math.sqrt(cone.r**2 + cone.h**2); 
     resultArr.push(`<b>母线长 (l)</b>: ${l.toFixed(2)}`)
     resultArr.push(`<b>体积 (V)</b>: ${(Math.PI * Math.pow(cone.r, 2) * cone.h / 3).toFixed(2)}`)
     resultArr.push(`<b>侧面积</b>: ${(Math.PI * cone.r * l).toFixed(2)}`)
@@ -211,7 +282,7 @@ const doCalculate = async () => {
     if (frustum.h <= 0) return ElMessage.warning('高必须大于 0')
     shapeName = '3D 圆台'
     paramsStr = `r1 = ${frustum.r1}, r2 = ${frustum.r2}, h = ${frustum.h}`
-    let l = Math.sqrt((frustum.r2 - frustum.r1)**2 + frustum.h**2); // 母线长
+    let l = Math.sqrt((frustum.r2 - frustum.r1)**2 + frustum.h**2); 
     let s_lateral = Math.PI * (frustum.r1 + frustum.r2) * l;
     let s_top = Math.PI * Math.pow(frustum.r1, 2);
     let s_bottom = Math.PI * Math.pow(frustum.r2, 2);
