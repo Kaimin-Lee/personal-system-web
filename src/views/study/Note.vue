@@ -316,24 +316,49 @@ const saveNote = async (isSilent = false) => {
   return false
 }
 
-// 软删除、恢复、彻底删除
 const softDeleteNote = () => {
   ElMessageBox.confirm('档案将被移入回收站，确认丢弃？', '提示', { type: 'warning' }).then(async () => {
     const res = await request.post(`/note/delete/${currentNote.value.id}`)
-    if (res.code === 200) { ElMessage.success('已移入回收站'); currentNote.value = { id: null }; fetchNotes(); if (isMobile.value) mobileView.value = 'list' }
+    if (res.code === 200) { 
+      ElMessage.success('已移入回收站'); 
+      
+      currentNote.value = { id: null, title: '', content: '', tags: '' };
+      originalNoteStr.value = JSON.stringify({ title: '', content: '', tags: '' });
+      isPreviewMode.value = true;
+      
+      fetchNotes(); 
+      if (isMobile.value) mobileView.value = 'list';
+    }
   }).catch(() => {})
 }
 
 const hardDeleteNote = () => {
   ElMessageBox.confirm('档案将被彻底销毁，不可找回！确认执行？', '高危操作警告', { type: 'error', confirmButtonText: '彻底销毁', confirmButtonClass: 'el-button--danger' }).then(async () => {
     const res = await request.post(`/note/hardDelete/${currentNote.value.id}`)
-    if (res.code === 200) { ElMessage.success('档案已彻底消失于虚空'); currentNote.value = { id: null }; fetchNotes(); if (isMobile.value) mobileView.value = 'list' }
+    if (res.code === 200) { 
+      ElMessage.success('档案已彻底消失于虚空'); 
+      
+      currentNote.value = { id: null, title: '', content: '', tags: '' }; 
+      originalNoteStr.value = JSON.stringify({ title: '', content: '', tags: '' });
+      isPreviewMode.value = true;
+      
+      fetchNotes(); 
+      if (isMobile.value) mobileView.value = 'list';
+    }
   }).catch(() => {})
 }
 
 const recoverNote = async () => {
   const res = await request.post(`/note/recover/${currentNote.value.id}`)
-  if (res.code === 200) { ElMessage.success('档案已恢复'); currentNote.value = { id: null }; fetchNotes(); if (isMobile.value) mobileView.value = 'list' }
+  if (res.code === 200) { 
+    ElMessage.success('档案已恢复'); 
+    currentNote.value = { id: null, title: '', content: '', tags: '' }; 
+    originalNoteStr.value = JSON.stringify({ title: '', content: '', tags: '' });
+    isPreviewMode.value = true;
+      
+    fetchNotes(); 
+    if (isMobile.value) mobileView.value = 'list';
+  }
 }
 
 const handleMoreCommand = async (command) => {
