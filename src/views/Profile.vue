@@ -497,3 +497,4 @@ onMounted(fetchProfile)
   .user-banner { flex-direction: column; align-items: flex-start; }
 }
 
+</style>
