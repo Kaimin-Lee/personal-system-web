@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find D:goldcodepersonal-system-websrcviewsstudy -type f -name *.vue -o -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx -o -name *.json)",
+      "Bash(xargs grep:*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

@@ -38,6 +38,12 @@ const routes = [
 	          meta: { title: '快捷导航' }
 	  },
 	  {
+	          path: 'study/note',
+	          name: 'Note',
+	          component: () => import('../views/study/Note.vue'),
+	          meta: { title: '学习笔记' }
+	  },
+	  {
 	          path: 'life/countdown',
 	          name: 'Countdown',
 	          component: () => import('../views/life/Countdown.vue'),
