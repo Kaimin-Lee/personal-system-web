@@ -24,9 +24,9 @@
           @select="handleMenuSelect"
         >
           <el-menu-item index="/dashboard"><el-icon><Odometer /></el-icon><template #title><span>首页看板</span></template></el-menu-item>
-          <el-sub-menu index="/work"><template #title><el-icon><Monitor /></el-icon><span>工作 (Work)</span></template><el-menu-item index="/work/todo">项目进度看板</el-menu-item><el-menu-item index="/work/shortcut">快捷导航</el-menu-item><el-menu-item index="/work/geometry">几何计算器</el-menu-item></el-sub-menu>
-          <el-sub-menu index="/study"><template #title><el-icon><Reading /></el-icon><span>学习 (Study)</span></template><el-menu-item index="/study/note">学习笔记</el-menu-item></el-sub-menu>
-          <el-sub-menu index="/life"><template #title><el-icon><Coffee /></el-icon><span>生活 (Life)</span></template><el-menu-item index="/life/memo">备忘录</el-menu-item><el-menu-item index="/life/ledger">记账本</el-menu-item><el-menu-item index="/life/countdown">📅 倒数日</el-menu-item></el-sub-menu>
+          <el-sub-menu index="/work"><template #title><el-icon><Monitor /></el-icon><span>工作 (Work)</span></template><el-menu-item index="/work/todo"><el-icon><List /></el-icon>项目进度看板</el-menu-item><el-menu-item index="/work/shortcut"><el-icon><Link /></el-icon>快捷导航</el-menu-item><el-menu-item index="/work/geometry"><el-icon><Compass /></el-icon>几何计算器</el-menu-item></el-sub-menu>
+          <el-sub-menu index="/study"><template #title><el-icon><Reading /></el-icon><span>学习 (Study)</span></template><el-menu-item index="/study/note"><el-icon><Notebook /></el-icon>学习笔记</el-menu-item></el-sub-menu>
+          <el-sub-menu index="/life"><template #title><el-icon><Coffee /></el-icon><span>生活 (Life)</span></template><el-menu-item index="/life/memo"><el-icon><ChatDotSquare /></el-icon>备忘录</el-menu-item><el-menu-item index="/life/ledger"><el-icon><Wallet /></el-icon>记账本</el-menu-item><el-menu-item index="/life/countdown"><el-icon><Calendar /></el-icon>倒数日</el-menu-item></el-sub-menu>
         </el-menu>
       </div>
     </el-aside>
@@ -39,7 +39,7 @@
             <el-badge :is-dot="hasUnread" class="contact-badge"><el-icon class="contact-icon" @click="openContactDrawer"><ChatLineRound /></el-icon></el-badge>
           </el-tooltip>
           <el-dropdown @command="handleCommand">
-            <span class="el-dropdown-link user-info"><el-avatar size="small" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" /><span class="username">指挥官</span><el-icon class="el-icon--right"><ArrowDown /></el-icon></span>
+            <span class="el-dropdown-link user-info"><el-avatar size="small" :src="avatarSrc" class="user-avatar">{{ avatarText }}</el-avatar><span class="username">{{ nickname }}</span><el-icon class="el-icon--right"><ArrowDown /></el-icon></span>
             <template #dropdown><el-dropdown-menu><el-dropdown-item command="profile">个人中心</el-dropdown-item><el-dropdown-item command="logout" divided>退出登录</el-dropdown-item></el-dropdown-menu></template>
           </el-dropdown>
         </div>
@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Odometer, Monitor, Reading, Coffee, ArrowDown, Expand, Fold, ChatLineRound } from '@element-plus/icons-vue'
+import { Odometer, Monitor, Reading, Coffee, ArrowDown, Expand, Fold, ChatLineRound, List, Link, Compass, Notebook, ChatDotSquare, Wallet, Calendar } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
@@ -60,15 +60,47 @@ import ContactAuthor from '@/components/ContactAuthor.vue'
 
 const router = useRouter(); const route = useRoute()
 const isCollapse = ref(false); const isMobile = ref(false); const hasUnread = ref(false); let unreadTimer = null
+const nickname = ref('加载中')
+const avatarText = ref('?')
+
+const defaultAvatars = [
+  'https://api.dicebear.com/7.x/bottts/svg?seed=1',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=2',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=3',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=4',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=5',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=6',
+]
+const avatarSrc = ref(localStorage.getItem('userAvatar') || '')
+
+const fetchUserInfo = async () => {
+  try {
+    const res = await request.get('/user/profile')
+    if (res.code === 200) {
+      const name = res.data.nickname || res.data.username || res.data.email || '用户'
+      nickname.value = name
+      avatarText.value = name.slice(-2)
+      if (!avatarSrc.value) {
+        const id = res.data.id || 1
+        avatarSrc.value = defaultAvatars[(id - 1) % defaultAvatars.length]
+      }
+    }
+  } catch (e) {}
+}
 const checkUnread = async () => { try { const res = await request.get('/message/unread'); if (res.code === 200) hasUnread.value = res.data } catch (error) {} }
 const checkMobile = () => { isMobile.value = window.innerWidth <= 768; if (isMobile.value) isCollapse.value = true; else isCollapse.value = false }
-onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile); checkUnread(); unreadTimer = setInterval(checkUnread, 3000) })
-onUnmounted(() => { window.removeEventListener('resize', checkMobile); if (unreadTimer) clearInterval(unreadTimer) })
+const onStorageChange = (e) => { if (e.key === 'userAvatar') avatarSrc.value = e.newValue || '' }
+const onAvatarUpdated = (e) => { avatarSrc.value = e.detail || '' }
+onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile); window.addEventListener('storage', onStorageChange); window.addEventListener('avatar-updated', onAvatarUpdated); checkUnread(); unreadTimer = setInterval(checkUnread, 3000); fetchUserInfo() })
+onUnmounted(() => { window.removeEventListener('resize', checkMobile); window.removeEventListener('storage', onStorageChange); window.removeEventListener('avatar-updated', onAvatarUpdated); if (unreadTimer) clearInterval(unreadTimer) })
 const toggleSidebar = () => { isCollapse.value = !isCollapse.value }
 const handleMenuSelect = () => { if (isMobile.value) isCollapse.value = true }
 const contactRef = ref(null)
 const openContactDrawer = () => { if (contactRef.value) { contactRef.value.open(); hasUnread.value = false } }
-const handleCommand = (command) => { if (command === 'logout') { localStorage.removeItem('token'); ElMessage.success('已安全退出'); router.push('/login') } }
+const handleCommand = (command) => {
+  if (command === 'logout') { localStorage.removeItem('token'); ElMessage.success('已安全退出'); router.push('/login') }
+  else if (command === 'profile') { router.push('/profile') }
+}
 </script>
 
 <style scoped>
@@ -117,10 +149,11 @@ const handleCommand = (command) => { if (command === 'logout') { localStorage.re
 
 .header-right { display: flex; align-items: center; }
 .contact-badge { margin-right: 28px; display: flex; align-items: center; }
-.contact-icon { font-size: 22px; color: #e2e8f0; cursor: pointer; transition: all 0.3s; }
+.contact-icon { font-size: 26px; color: #e2e8f0; cursor: pointer; transition: all 0.3s; }
 .contact-icon:hover { color: #00f3ff; transform: scale(1.1); filter: drop-shadow(0 0 5px #00f3ff); }
 .user-info { display: flex; align-items: center; cursor: pointer; color: #e2e8f0; outline: none; }
-.username { margin-left: 8px; margin-right: 4px; }
+.user-avatar { background: linear-gradient(135deg, #00f3ff, #0066ff); color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0; width: 36px; height: 36px; }
+.username { margin-left: 10px; margin-right: 4px; font-size: 15px; }
 .main-content { padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 @media screen and (max-width: 768px) {

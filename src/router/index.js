@@ -48,6 +48,24 @@ const routes = [
 	          name: 'Countdown',
 	          component: () => import('../views/life/Countdown.vue'),
 	          meta: { title: '倒数日管理' }
+	        },
+	  {
+	          path: 'life/memo',
+	          name: 'Memo',
+	          component: () => import('../views/life/Memo.vue'),
+	          meta: { title: '备忘录' }
+	        },
+	  {
+	          path: 'life/ledger',
+	          name: 'Ledger',
+	          component: () => import('../views/life/Ledger.vue'),
+	          meta: { title: '记账本' }
+	        },
+	  {
+	          path: 'profile',
+	          name: 'Profile',
+	          component: () => import('../views/Profile.vue'),
+	          meta: { title: '个人中心' }
 	        }
     ]
   }

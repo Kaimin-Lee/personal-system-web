@@ -77,6 +77,7 @@ const myUserId = ref(null)
 const targetUserId = ref(null)
 
 const sessionList = ref([])
+const usernames = ref({})  // uid -> username
 const messageList = ref([])
 const inputText = ref('')
 const scrollbarRef = ref(null)
@@ -123,7 +124,17 @@ const fetchSessions = async (isSilent = false) => {
   if (!isSilent) loading.value = true
   try {
     const res = await request.get('/message/sessions')
-    if (res.code === 200) sessionList.value = res.data
+    if (res.code === 200) {
+      sessionList.value = res.data
+      // 拉取每个用户的用户名
+      for (const uid of res.data) {
+        if (!usernames.value[uid]) {
+          request.get(`/user/info/${uid}`).then(r => {
+            if (r.code === 200) usernames.value[uid] = r.data.nickname || r.data.username || `用户${uid}`
+          }).catch(() => { usernames.value[uid] = `用户${uid}` })
+        }
+      }
+    }
   } finally {
     if (!isSilent) loading.value = false
   }

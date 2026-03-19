@@ -195,9 +195,39 @@ const handleCreated = (editor) => {
 }
 
 // 脏检查：判断是否有未保存的修改
+// 脏检查：判断是否有未保存的修改 (已优化富文本空标签误判)
 const isDirty = computed(() => {
   if (isPreviewMode.value || isTrashMode.value) return false
-  return JSON.stringify({ title: currentNote.value.title, content: currentNote.value.content, tags: currentNote.value.tags }) !== originalNoteStr.value
+  
+  let original = { title: '', content: '', tags: '' }
+  try {
+    if (originalNoteStr.value) {
+      original = JSON.parse(originalNoteStr.value)
+    }
+  } catch (e) {}
+
+  const currentTitle = (currentNote.value.title || '').trim()
+  const originalTitle = (original.title || '').trim()
+  const currentTags = (currentNote.value.tags || '').trim()
+  const originalTags = (original.tags || '').trim()
+  
+  let currentContent = currentNote.value.content || ''
+  let originalContent = original.content || ''
+
+  const isContentEmpty = (html) => {
+    if (!html) return true
+    const text = html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
+    return text === '' && !html.includes('<img') && !html.includes('<video') && !html.includes('<iframe')
+  }
+
+  if (isContentEmpty(currentContent) && isContentEmpty(originalContent)) {
+    currentContent = ''
+    originalContent = ''
+  }
+
+  return currentTitle !== originalTitle || 
+         currentTags !== originalTags || 
+         currentContent !== originalContent
 })
 
 // 拦截切换逻辑
