@@ -359,8 +359,10 @@ const saveProfile = async () => {
   saving.value = true
   const res = await request.post('/user/profile', { nickname: profileForm.value.nickname })
   saving.value = false
-  if (res.code === 200) ElMessage.success('信息已更新')
-  else ElMessage.error(res.message)
+  if (res.code === 200) {
+    window.dispatchEvent(new CustomEvent('nickname-updated', { detail: profileForm.value.nickname }))
+    ElMessage.success('信息已更新')
+  } else ElMessage.error(res.message)
 }
 
 const changePassword = async () => {
@@ -481,4 +483,17 @@ onMounted(fetchProfile)
 
 .mismatch-tip { font-size: 12px; color: #ef4444; margin-top: 4px; }
 :deep(.mismatch .el-input__wrapper) { border-color: #ef4444 !important; }
-</style>
+
+@media screen and (max-width: 768px) {
+  .profile-container { padding: 12px; }
+  .user-banner { padding: 16px; gap: 14px; }
+  .user-name { font-size: 16px; }
+  :deep(.el-dialog) { width: 92vw !important; margin: 0 auto; }
+  .avatar-grid { grid-template-columns: repeat(4, 1fr); }
+  .profile-card { margin-bottom: 14px; }
+}
+@media screen and (max-width: 480px) {
+  .avatar-grid { grid-template-columns: repeat(3, 1fr); }
+  .user-banner { flex-direction: column; align-items: flex-start; }
+}
+

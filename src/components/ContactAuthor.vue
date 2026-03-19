@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 
@@ -182,6 +182,10 @@ const scrollToBottom = () => {
 }
 
 defineExpose({ open })
+
+const onResize = () => { isMobile.value = window.innerWidth <= 768 }
+onMounted(() => window.addEventListener('resize', onResize))
+onUnmounted(() => window.removeEventListener('resize', onResize))
 </script>
 
 <style>
@@ -346,5 +350,12 @@ defineExpose({ open })
 .send-action {
   text-align: right;
   margin-top: 12px;
+}
+
+@media screen and (max-width: 768px) {
+  .session-sidebar { display: none; }
+  .chat-container { flex-direction: column; }
+  .input-area { padding: 10px; }
+  .msg-bubble-wrapper { max-width: 95%; }
 }
 </style>

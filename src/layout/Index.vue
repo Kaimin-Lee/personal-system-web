@@ -91,8 +91,9 @@ const checkUnread = async () => { try { const res = await request.get('/message/
 const checkMobile = () => { isMobile.value = window.innerWidth <= 768; if (isMobile.value) isCollapse.value = true; else isCollapse.value = false }
 const onStorageChange = (e) => { if (e.key === 'userAvatar') avatarSrc.value = e.newValue || '' }
 const onAvatarUpdated = (e) => { avatarSrc.value = e.detail || '' }
-onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile); window.addEventListener('storage', onStorageChange); window.addEventListener('avatar-updated', onAvatarUpdated); checkUnread(); unreadTimer = setInterval(checkUnread, 3000); fetchUserInfo() })
-onUnmounted(() => { window.removeEventListener('resize', checkMobile); window.removeEventListener('storage', onStorageChange); window.removeEventListener('avatar-updated', onAvatarUpdated); if (unreadTimer) clearInterval(unreadTimer) })
+const onNicknameUpdated = (e) => { const name = e.detail || ''; nickname.value = name; avatarText.value = name.slice(-2) }
+onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile); window.addEventListener('storage', onStorageChange); window.addEventListener('avatar-updated', onAvatarUpdated); window.addEventListener('nickname-updated', onNicknameUpdated); checkUnread(); unreadTimer = setInterval(checkUnread, 3000); fetchUserInfo() })
+onUnmounted(() => { window.removeEventListener('resize', checkMobile); window.removeEventListener('storage', onStorageChange); window.removeEventListener('avatar-updated', onAvatarUpdated); window.removeEventListener('nickname-updated', onNicknameUpdated); if (unreadTimer) clearInterval(unreadTimer) })
 const toggleSidebar = () => { isCollapse.value = !isCollapse.value }
 const handleMenuSelect = () => { if (isMobile.value) isCollapse.value = true }
 const contactRef = ref(null)

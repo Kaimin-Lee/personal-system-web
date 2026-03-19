@@ -30,29 +30,31 @@
           <div class="amount">{{ savingRate }}%</div>
         </div>
       </div>
-    </div>
+      </div>
 
     <!-- 工具栏 -->
     <div class="toolbar">
-      <el-date-picker v-model="filterMonth" type="month" value-format="YYYY-MM"
-        placeholder="选择月份" clearable @change="fetchAll" style="width:150px" />
-      <el-select v-model="filterType" placeholder="全部类型" clearable @change="fetchList" style="width:120px">
-        <el-option label="支出" :value="1" />
-        <el-option label="收入" :value="2" />
-        <el-option label="投资/理财" :value="3" />
-        <el-option label="转账" :value="4" />
-      </el-select>
-      <el-select v-model="filterCategory" placeholder="全部分类" clearable @change="fetchList" style="width:130px">
-        <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
-      </el-select>
-      <span class="record-count">共 {{ list.length }} 条</span>
-      <el-button type="primary" @click="handleAdd" style="margin-left:auto">
+      <div class="toolbar-filters">
+        <el-date-picker v-model="filterMonth" type="month" value-format="YYYY-MM"
+          placeholder="选择月份" clearable @change="fetchAll" style="width:150px" />
+        <el-select v-model="filterType" placeholder="全部类型" clearable @change="fetchList" style="width:120px">
+          <el-option label="支出" :value="1" />
+          <el-option label="收入" :value="2" />
+          <el-option label="投资/理财" :value="3" />
+          <el-option label="转账" :value="4" />
+        </el-select>
+        <el-select v-model="filterCategory" placeholder="全部分类" clearable @change="fetchList" style="width:130px">
+          <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
+        </el-select>
+        <span class="record-count">共 {{ list.length }} 条</span>
+      </div>
+      <el-button type="primary" @click="handleAdd" class="add-btn">
         <el-icon><Plus /></el-icon> 记一笔
       </el-button>
     </div>
 
-    <!-- 表格 -->
-    <el-table :data="list" stripe class="ledger-table" :row-class-name="rowClass" align="center">
+    <!-- 表格（PC） -->
+    <el-table :data="list" stripe class="ledger-table pc-only" :row-class-name="rowClass" align="center">
       <el-table-column prop="recordDate" label="日期" width="110" align="center" />
       <el-table-column label="类型" width="95" align="center">
         <template #default="{ row }">
@@ -86,6 +88,31 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 卡片列表（移动端） -->
+    <div class="mobile-only record-list">
+      <div v-for="row in list" :key="row.id" class="record-card" :class="rowClass({ row })">
+        <div class="record-card-top">
+          <el-tag :type="typeTagMap[row.transactionType]?.type" size="small" effect="light">{{ typeTagMap[row.transactionType]?.label }}</el-tag>
+          <span :class="amountClass(row.transactionType)" class="record-amount">
+            {{ row.transactionType === 2 ? '+' : row.transactionType === 4 ? '' : '-' }}{{ row.amount }}
+          </span>
+        </div>
+        <div class="record-card-mid">
+          <span class="category-chip">{{ row.category || '-' }}</span>
+          <span class="record-account">{{ row.accountType }}</span>
+          <span class="record-date">{{ row.recordDate }}</span>
+        </div>
+        <div class="record-card-bottom" v-if="row.remark">
+          <span class="record-remark">{{ row.remark }}</span>
+        </div>
+        <div class="record-card-actions">
+          <el-icon class="action-icon" @click="handleEdit(row)"><Edit /></el-icon>
+          <el-icon class="action-icon del" @click="handleDelete(row.id)"><Delete /></el-icon>
+        </div>
+      </div>
+      <div v-if="list.length === 0" class="empty-tip">暂无记录</div>
+    </div>
 
     <!-- 弹窗 -->
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑记录' : '新增记录'" width="440px" class="responsive-dialog">
@@ -211,7 +238,7 @@ onMounted(fetchAll)
 .ledger-container { padding: 20px; }
 
 /* 汇总卡 */
-.summary-bar { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .summary-card {
   flex: 1; min-width: 130px;
   display: flex; align-items: center; gap: 14px;
@@ -236,7 +263,9 @@ onMounted(fetchAll)
 .rate .amount { color: #a78bfa; }
 
 /* 工具栏 */
-.toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.toolbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1; }
+.add-btn { flex-shrink: 0; align-self: flex-start; }
 .record-count { font-size: 13px; color: #6b7280; padding: 0 4px; }
 
 /* 表格 */
@@ -250,8 +279,8 @@ onMounted(fetchAll)
 .transfer-text { color: #60a5fa; font-weight: 600; }
 
 .category-chip {
-  background: rgba(0,0,0,0.05); border-radius: 4px;
-  padding: 2px 8px; font-size: 12px; color: #374151;
+  background: rgba(255,255,255,0.08); border-radius: 4px;
+  padding: 2px 8px; font-size: 12px; color: #cbd5e1;
 }
 
 /* 弹窗 */
@@ -262,8 +291,65 @@ onMounted(fetchAll)
 .action-icon:hover { color: #3b82f6; transform: scale(1.15); }
 .action-icon.del:hover { color: #ef4444; transform: scale(1.15); }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 768px) {
   :deep(.responsive-dialog) { width: 95% !important; }
-  .summary-card { min-width: calc(50% - 7px); }
+  .ledger-container { padding: 12px; }
+  .toolbar { gap: 8px; }
+  .toolbar .el-button { margin-left: 0 !important; }
+  .record-count { display: none; }
+  .pc-only { display: none; }
+  .summary-bar { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .summary-card { padding: 10px 12px; gap: 10px; }
+  .card-icon { font-size: 20px; }
+  .card-body .label { font-size: 11px; }
+  .card-body .amount { font-size: 16px; }
 }
+@media screen and (min-width: 769px) {
+  .mobile-only { display: none; }
+  .summary-toggle { display: none; }
+}
+
+/* 折叠按钮 */
+.summary-section { margin-bottom: 16px; }
+.summary-toggle {
+  align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(0,243,255,0.15);
+  font-size: 14px; color: #94a3b8; margin-bottom: 8px;
+}
+.toggle-icon { transition: transform 0.3s; }
+.toggle-icon.collapsed { transform: rotate(-90deg); }
+/* 移动端卡片列表 */
+.record-list { display: flex; flex-direction: column; gap: 8px; }
+.record-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.record-card:active { transform: scale(0.98); }
+.record-card-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.record-amount { font-size: 20px; font-weight: 700; }
+.record-card-mid {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12px; color: #64748b; margin-bottom: 0;
+}
+.record-date { margin-left: auto; color: #475569; }
+.record-account {
+  background: rgba(255,255,255,0.06); border-radius: 4px;
+  padding: 2px 7px; color: #94a3b8;
+}
+.record-card-bottom { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+.record-remark { font-size: 12px; color: #64748b; font-style: italic; }
+.record-card-actions {
+  display: flex; justify-content: flex-end; gap: 20px;
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.empty-tip { text-align: center; color: #64748b; padding: 40px 0; font-size: 14px; }
 </style>

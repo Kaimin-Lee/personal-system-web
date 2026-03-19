@@ -236,6 +236,19 @@ kbd { background: rgba(255,255,255,0.15); border-radius: 3px; padding: 1px 4px; 
 /* 瀑布流 */
 .memo-grid { columns: 4 220px; column-gap: 16px; }
 
+@media screen and (max-width: 768px) {
+  .memo-grid { columns: 2 160px; column-gap: 10px; }
+  .memo-container { padding: 12px; }
+  .input-area { padding: 12px; }
+  .input-footer { flex-direction: column; align-items: flex-start; }
+  .color-picker { flex-wrap: wrap; max-width: 100%; }
+  .input-footer .el-button { width: 100%; }
+}
+@media screen and (max-width: 480px) {
+  .memo-grid { columns: 1; }
+  .color-dot { width: 28px; height: 28px; }
+}
+
 .memo-card {
   break-inside: avoid;
   border-radius: 12px;

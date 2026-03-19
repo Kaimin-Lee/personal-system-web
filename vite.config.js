@@ -1,11 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'node:url' // 1. 引入 node 的 URL 解析模块
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
-  
-  // 2. 增加 resolve.alias 配置，让 vite 认识 @ 符号
+
+  define: {
+    __APP_VERSION__: JSON.stringify(Date.now().toString())
+  },
+
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
