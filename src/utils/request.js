@@ -2,14 +2,11 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
-// 1. 创建一个 axios 实例
 const request = axios.create({
-  // 【核心改造】：动态获取不同环境下的后端地址
   baseURL: import.meta.env.VITE_API_BASE_URL, 
   timeout: 5000 
 })
 
-// 2. 请求拦截器：统一携带 Token
 request.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
@@ -18,22 +15,33 @@ request.interceptors.request.use(
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  }
+  error => Promise.reject(error)
 )
 
-// 3. 响应拦截器：统一处理后端返回结构和报错
 request.interceptors.response.use(
   response => {
     const res = response.data
-    // 【核心改造】：如果后端返回 401，说明 Token 失效/过期
+    
+    // 1. 处理 Token 失效
     if (res.code === 401) {
       ElMessage.warning('登录已过期，请重新登录')
-      localStorage.removeItem('token') // 清除失效的 token
-      router.push('/login') // 强行跳转到登录页
-      return Promise.reject(new Error(res.message)) // 阻断业务请求继续往下走
+      localStorage.removeItem('token')
+      
+      // 【优化】：携带当前路由全路径，作为重新登录后的重定向目标
+      const currentPath = router.currentRoute.value.fullPath
+      router.push({ path: '/login', query: { redirect: currentPath } })
+      
+      return Promise.reject(new Error(res.message)) 
     }
+    
+    // 2. 【核心修复】：统一拦截所有的业务级报错
+    if (res.code !== 200) {
+      ElMessage.error(res.message || '系统繁忙，请稍后再试')
+      // 抛出错误，阻断具体组件里的 then 逻辑继续执行
+      return Promise.reject(new Error(res.message || '业务接口请求失败')) 
+    }
+    
+    // 3. 正常成功的情况
     return res
   },
   error => {

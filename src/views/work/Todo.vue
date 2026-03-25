@@ -160,9 +160,28 @@ const handleDelete = (id) => {
 }
 
 const handleDragChange = async (event, newStatus) => {
-  if (event.added) {
-    const res = await request.put('/task/updateStatus', { id: event.added.element.id, status: newStatus })
-    if (res.code !== 200) { ElMessage.error('更新失败'); fetchTasks() }
+  try {
+    if (event.added) {
+      const taskId = event.added.element.id
+      await request.put('/task/updateStatus', { id: taskId, status: newStatus })
+      ElMessage.success('状态已更新')
+    }
+    
+    if (event.moved) {
+      let currentList = []
+      if (newStatus === 0) currentList = todoList.value
+      else if (newStatus === 1) currentList = doingList.value
+      else if (newStatus === 2) currentList = doneList.value
+
+      const sortedIds = currentList.map(item => item.id)
+
+      await request.put('/task/updateSort', { 
+        status: newStatus, 
+        sortedIds: sortedIds 
+      })
+    }
+  } catch (error) {
+    fetchTasks()
   }
 }
 
